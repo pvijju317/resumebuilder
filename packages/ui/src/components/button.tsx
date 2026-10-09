@@ -5,11 +5,11 @@ import { cn } from '../lib/cn.js';
 import { Spinner } from './spinner.js';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium whitespace-nowrap select-none transition-colors duration-150 ease-out disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:stroke-[1.5]',
+  'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium whitespace-nowrap select-none transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:stroke-[1.5]',
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-accent-fg hover:bg-accent-hover',
+        primary: 'bg-accent text-accent-fg shadow-card hover:bg-accent-hover',
         secondary: 'border border-border bg-surface text-text shadow-card hover:bg-surface-muted',
         ghost: 'text-muted hover:bg-surface-muted hover:text-text',
         danger: 'bg-danger-solid text-white hover:opacity-90',
@@ -34,18 +34,26 @@ export interface ButtonProps
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild, loading, disabled, children, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+    const classes = cn(buttonVariants({ variant, size }), className);
+    // Slot requires exactly one child, so asChild buttons (links) never render the spinner.
+    if (asChild) {
+      return (
+        <Slot ref={ref} className={classes} {...props}>
+          {children}
+        </Slot>
+      );
+    }
     return (
-      <Comp
+      <button
         ref={ref}
-        className={cn(buttonVariants({ variant, size }), className)}
+        className={classes}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
         {...props}
       >
         {loading ? <Spinner className="size-4" label="" /> : null}
         {children}
-      </Comp>
+      </button>
     );
   },
 );

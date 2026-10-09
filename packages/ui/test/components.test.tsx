@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { Button } from '../src/components/button.js';
 import { Chip } from '../src/components/chip.js';
 import { Field, Input } from '../src/components/field.js';
 import { OPTIMIZE_STEPS, ProgressSteps } from '../src/components/progress-steps.js';
@@ -79,5 +80,24 @@ describe('StrengthMeter', () => {
   it('exposes a meter with the value', () => {
     render(<StrengthMeter value={62} />);
     expect(screen.getByRole('meter').getAttribute('aria-valuenow')).toBe('62');
+  });
+});
+
+describe('Button', () => {
+  it('renders as its child element with asChild', () => {
+    render(
+      <Button asChild>
+        <a href="/x">Go</a>
+      </Button>,
+    );
+    const link = screen.getByRole('link', { name: 'Go' });
+    expect(link.className).toContain('bg-accent');
+  });
+
+  it('shows a busy state while loading', () => {
+    render(<Button loading>Save</Button>);
+    const btn = screen.getByRole('button', { name: 'Save' });
+    expect(btn.getAttribute('aria-busy')).toBe('true');
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
   });
 });

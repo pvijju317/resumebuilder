@@ -14,9 +14,12 @@ export interface Step {
 export function ProgressSteps({
   steps,
   current,
+  orientation = 'horizontal',
   className,
 }: {
   steps: Step[];
+  /** Horizontal from `sm` up (default) or always vertical. */
+  orientation?: 'horizontal' | 'vertical';
   /** id of the active step; `null` before start; `'done'` when finished. */
   current: string | null;
   className?: string;
@@ -25,11 +28,19 @@ export function ProgressSteps({
   const active = steps[activeIndex];
   return (
     <div className={cn('flex flex-col gap-3', className)}>
-      <ol className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+      <ol
+        className={cn(
+          'flex flex-col gap-3',
+          orientation === 'horizontal' && 'sm:flex-row sm:items-center sm:gap-2',
+        )}
+      >
         {steps.map((s, i) => {
           const state = i < activeIndex ? 'done' : i === activeIndex ? 'active' : 'pending';
           return (
-            <li key={s.id} className="flex items-center gap-2 sm:flex-1">
+            <li
+              key={s.id}
+              className={cn('flex items-center gap-2', orientation === 'horizontal' && 'sm:flex-1')}
+            >
               <span
                 className={cn(
                   'flex size-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors duration-200 ease-out [&_svg]:size-3.5',
@@ -59,7 +70,7 @@ export function ProgressSteps({
                   {state === 'done' ? ' (done)' : state === 'active' ? ' (in progress)' : ''}
                 </span>
               </span>
-              {i < steps.length - 1 ? (
+              {i < steps.length - 1 && orientation === 'horizontal' ? (
                 <span className="hidden h-px flex-1 bg-border sm:block" aria-hidden />
               ) : null}
             </li>
