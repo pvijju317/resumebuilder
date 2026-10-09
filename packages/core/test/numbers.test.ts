@@ -34,6 +34,13 @@ describe('extractNumbers', () => {
     expect(n.kind).toBe(kind);
   });
 
+  it('extracts numbers with attached units', () => {
+    expect(
+      extractNumbers('load time from 40s to 6s, p95 120ms, 2hrs saved, 500GB').map((n) => n.value),
+    ).toEqual([40, 6, 120, 2, 500]);
+    expect(extractNumbers('2FA and 5G rollout')).toEqual([]);
+  });
+
   it('marks lower bounds', () => {
     expect(one('40+ clients').plus).toBe(true);
   });

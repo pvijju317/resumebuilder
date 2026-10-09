@@ -98,7 +98,8 @@ const NUMERIC_RE = new RegExp(
     String.raw`(?:\s?(?<mult>${MULT_ALT})(?![\p{L}]))?` +
     String.raw`(?<pct>\s?%|\s?per\s?cent\b|\s?percent\b)?` +
     String.raw`(?<plus>\+)?` +
-    String.raw`(?<suffix>x|st|nd|rd|th)?` +
+    // Attached units ("40s", "6ms", "2hrs", "500GB") so the number is still fact-checked.
+    String.raw`(?<suffix>x|st|nd|rd|th|ms|s|hrs?|h|mins?|gb|tb|mb|kb)?` +
     String.raw`(?![\p{L}\p{N}])` +
     String.raw`(?:\s?(?<cur2>inr|usd|gbp|eur)\b)?`,
   'giu',
