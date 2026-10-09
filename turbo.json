@@ -2,6 +2,13 @@
   "$schema": "https://turbo.build/schema.json",
   "agentGuidance": false,
   "globalDependencies": [".env"],
+  "globalPassThroughEnv": [
+    "CI",
+    "DATABASE_URL",
+    "DATABASE_URL_TEST",
+    "REDIS_URL",
+    "NVIDIA_API_KEY"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
