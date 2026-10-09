@@ -78,3 +78,14 @@ pnpm eval --task resume.rewrite --dataset evals/pairs.jsonl   # needs NVIDIA_API
 6. **Starter plan cover letters** — the PRD plan table omits them, but "included per optimization: 1 cover letter" suggests all paid plans. Seeded as **not included** for Starter; please confirm.
 7. **Sampling** — the model card recommends temperature 1.0 / top_p 0.95 even with reasoning off; the TRD sets 0–0.6 per task. I kept the TRD values; the eval can compare both once the key is in.
 8. **Git remote** — share an org/repo when ready so CI runs on push.
+
+## Addendum — design review round (2026-10-09)
+
+Client feedback: "why sign in first, where is the landing page, colours and design feel basic."
+
+- **Landing page at `/`** (pulled forward from Phase 3): hero with a live before/after resume, how it works, Fact Guard, region formats (rendered from `packages/core` region config), extension and privacy, pricing read from the new public `GET /plans`, FAQ, final CTA, footer with legal placeholders. The product moved to `/app`; sign-in is now optional from the nav.
+- **Visual refresh**: cobalt accent on stone neutrals (all pairs ≥ 4.5:1 in both themes), Geist + Geist Mono, tinted shadows, split login page with product preview, setup-path dashboard.
+- **Skill**: `design-taste-frontend` (Leonxlnx/taste-skill, MIT) reviewed and vendored in `.claude/skills/`; CLAUDE.md rules take precedence (no stock imagery, Lucide icons).
+- **Bugs found and fixed**: `Button asChild` crashed Radix Slot; `pnpm db:deploy` ran pnpm's built-in `deploy` (would have broken CI); region table `<dl role="tabpanel">` broke list semantics.
+- **Checks**: 148 unit/integration tests pass; Playwright 16/16 (WCAG 2.1 AA on `/`, `/login`, `/styleguide` in light/dark, desktop/375 px; pricing toggle; no horizontal scroll).
+- **Not yet true**: the PRD's no-signup "check my ATS score" hero needs the scoring engine (Phase 2) and the anonymous backend (Phase 3). Until then the hero CTA leads to sign-up and the demo is a labelled example.
