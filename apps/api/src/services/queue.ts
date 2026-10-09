@@ -3,18 +3,17 @@ import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 
 /** Background jobs the API hands to the worker. Names match apps/worker processors. */
-export type VaultJob =
+export type BackgroundJob =
   | { name: 'vault.parse'; data: { importId: string } }
-  | { name: 'vault.gapQuestions'; data: { vaultId: string; userId: string } };
-
-export const VAULT_QUEUE = QUEUE_NAMES.vault;
+  | { name: 'vault.gapQuestions'; data: { vaultId: string; userId: string } }
+  | { name: 'jd.extract'; data: { jobId: string } };
 
 export interface JobQueue {
-  enqueue(job: VaultJob): Promise<void>;
+  enqueue(job: BackgroundJob): Promise<void>;
 }
 
 export function createBullQueue(connection: Redis): JobQueue & { close(): Promise<void> } {
-  const q = new Queue(VAULT_QUEUE, { connection });
+  const q = new Queue(QUEUE_NAMES.background, { connection });
   return {
     async enqueue(job) {
       await q.add(job.name, job.data, {
@@ -28,8 +27,8 @@ export function createBullQueue(connection: Redis): JobQueue & { close(): Promis
 }
 
 export class MemoryQueue implements JobQueue {
-  readonly jobs: VaultJob[] = [];
-  async enqueue(job: VaultJob) {
+  readonly jobs: BackgroundJob[] = [];
+  async enqueue(job: BackgroundJob) {
     this.jobs.push(job);
   }
 }

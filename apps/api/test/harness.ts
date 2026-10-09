@@ -35,7 +35,12 @@ export async function resetDb() {
 }
 
 export function makeApp(
-  opts: { env?: Record<string, string>; google?: GoogleVerifier | null; storage?: Storage } = {},
+  opts: {
+    env?: Record<string, string>;
+    google?: GoogleVerifier | null;
+    storage?: Storage;
+    fetchJobText?: (url: string) => Promise<string>;
+  } = {},
 ) {
   const env = testEnv(opts.env);
   const outbox: Mail[] = [];
@@ -51,6 +56,12 @@ export function makeApp(
     google: opts.google ?? null,
     storage,
     queue,
+    human: { verify: async (token: string) => token !== 'fail' },
+    fetchJobText:
+      opts.fetchJobText ??
+      (async () => {
+        throw new Error('network disabled in tests');
+      }),
   });
   const lastCode = (to: string) => {
     const mail = [...outbox].reverse().find((m) => m.to === to);

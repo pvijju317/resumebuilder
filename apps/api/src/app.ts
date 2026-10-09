@@ -19,6 +19,11 @@ import type { JobQueue } from './services/queue.js';
 import { DiskStorage, type Storage } from './services/storage.js';
 import { AppError } from '@tailor/shared';
 import { createVaultService } from './services/vault.service.js';
+import { anonRoutes, configRoute, jobsRoutes } from './routes/jobs.routes.js';
+import { createAnonService } from './services/anon.service.js';
+import { createJobsService } from './services/jobs.service.js';
+import type { HumanCheck } from './services/turnstile.js';
+import { fetchJobText } from './services/url-fetch.js';
 import { createAuthService } from './services/auth.service.js';
 import type { Mailer } from './services/mailer.js';
 import { createMeService } from './services/me.service.js';
@@ -34,6 +39,9 @@ export interface AppDeps {
   google: GoogleVerifier | null;
   storage: Storage | null;
   queue: JobQueue;
+  human: HumanCheck;
+  /** Injected in tests; defaults to the SSRF-safe fetcher. */
+  fetchJobText?: (url: string) => Promise<string>;
   /** Readiness probes for /health/ready. */
   checks?: Record<string, () => Promise<unknown>>;
 }
@@ -47,6 +55,12 @@ export function createApp(deps: AppDeps) {
   const files = createFilesService({ prisma, env, storage: deps.storage });
   const imports = createImportsService({ prisma, files, queue: deps.queue });
   const vault = createVaultService({ prisma, queue: deps.queue });
+  const jobs = createJobsService({
+    prisma,
+    queue: deps.queue,
+    fetchJobText: deps.fetchJobText ?? fetchJobText,
+  });
+  const anon = createAnonService({ prisma, env, jobs, storage: deps.storage });
 
   const app = express();
   app.disable('x-powered-by');
@@ -130,8 +144,12 @@ export function createApp(deps: AppDeps) {
   v1.use('/me', ...authed, meRoutes(me));
   v1.use('/files', ...authed, filesRoutes(files));
   v1.use('/vault', ...authed, vaultRoutes({ env, hits, imports, vault }));
+  v1.use('/jobs', ...authed, jobsRoutes({ env, hits, jobs }));
+  v1.use('/anon', anonRoutes({ env, hits, anon, human: deps.human }));
+  v1.use('/config', configRoute(env));
 
   app.use('/api/v1', v1);
+  app.locals['anon'] = anon;
   app.use(notFound);
   app.use(errorHandler(logger));
   return app;

@@ -8,6 +8,8 @@ import { createGoogleVerifier } from './routes/auth.routes.js';
 import { createMailer } from './services/mailer.js';
 import { createBullQueue } from './services/queue.js';
 import { createStorage, DiskStorage } from './services/storage.js';
+import { createTurnstile } from './services/turnstile.js';
+import type { AnonService } from './services/anon.service.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
@@ -40,8 +42,18 @@ const app = createApp({
   google: createGoogleVerifier(env),
   storage,
   queue,
+  human: createTurnstile(env),
   checks: { db: () => prisma.$queryRaw`SELECT 1`, redis: () => redis.ping() },
 });
+
+// Anonymous sessions, their jobs and uploads expire (PRD F1: 72 h).
+const anon = app.locals['anon'] as AnonService;
+setInterval(() => {
+  anon.cleanupExpired().then(
+    (n) => n && logger.info(`removed ${n} expired anonymous sessions`),
+    (err) => logger.warn({ err }, 'anonymous cleanup failed'),
+  );
+}, 3_600_000).unref();
 
 const port = Number(new URL(env.API_URL).port || 4000);
 const server = app.listen(port, () => logger.info(`api listening on :${port}`));

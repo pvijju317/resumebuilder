@@ -35,18 +35,25 @@ interface Item {
  * clear vertical gutter (two-column resume), the left column is emitted before the right.
  */
 export function orderPageText(items: Item[], pageWidth: number): string {
+  return orderPage(items, pageWidth).text;
+}
+
+function orderPage(items: Item[], pageWidth: number): { text: string; twoColumn: boolean } {
   const text = items.filter((i) => i.str.trim().length > 0);
-  if (text.length === 0) return '';
+  if (text.length === 0) return { text: '', twoColumn: false };
 
   const gutter = findGutter(text, pageWidth);
   const columns =
     gutter === null
       ? [text]
       : [text.filter((i) => i.x < gutter), text.filter((i) => i.x >= gutter)];
-  return columns
-    .map((col) => toLines(col))
-    .filter(Boolean)
-    .join('\n\n');
+  return {
+    text: columns
+      .map((col) => toLines(col))
+      .filter(Boolean)
+      .join('\n\n'),
+    twoColumn: gutter !== null,
+  };
 }
 
 function toLines(items: Item[]): string {
@@ -104,7 +111,7 @@ function findGutter(items: Item[], pageWidth: number): number | null {
   return left >= items.length * 0.15 && right >= items.length * 0.15 ? best.x : null;
 }
 
-async function extractPdf(buf: Uint8Array): Promise<string> {
+async function extractPdf(buf: Uint8Array): Promise<{ text: string; twoColumn: boolean }> {
   const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const task = getDocument({
     data: new Uint8Array(buf),
@@ -122,6 +129,7 @@ async function extractPdf(buf: Uint8Array): Promise<string> {
       );
     }
     const pages: string[] = [];
+    let twoColumn = false;
     for (let n = 1; n <= doc.numPages; n++) {
       const page = await doc.getPage(n);
       const viewport = page.getViewport({ scale: 1 });
@@ -139,10 +147,12 @@ async function extractPdf(buf: Uint8Array): Promise<string> {
             ]
           : [],
       );
-      pages.push(orderPageText(items, viewport.width));
+      const ordered = orderPage(items, viewport.width);
+      pages.push(ordered.text);
+      twoColumn ||= ordered.twoColumn;
       page.cleanup();
     }
-    return pages.join('\n\n');
+    return { text: pages.join('\n\n'), twoColumn };
   } finally {
     await task.destroy();
   }
@@ -156,17 +166,14 @@ async function extractDocx(buf: Uint8Array): Promise<string> {
 /** Extract plain text from a resume file. Throws friendly AppErrors for unusable files. */
 export async function extractResumeText(
   buf: Uint8Array,
-): Promise<{ kind: FileKind; text: string }> {
+): Promise<{ kind: FileKind; text: string; twoColumn: boolean }> {
   const kind = sniffKind(buf);
   if (!kind) throw new AppError('VALIDATION', 'That file is not a readable PDF, DOCX or TXT.', 400);
   let raw: string;
+  let twoColumn = false;
   try {
-    raw =
-      kind === 'pdf'
-        ? await extractPdf(buf)
-        : kind === 'docx'
-          ? await extractDocx(buf)
-          : new TextDecoder().decode(buf);
+    if (kind === 'pdf') ({ text: raw, twoColumn } = await extractPdf(buf));
+    else raw = kind === 'docx' ? await extractDocx(buf) : new TextDecoder().decode(buf);
   } catch (e) {
     if (e instanceof AppError) throw e;
     throw new AppError(
@@ -188,5 +195,5 @@ export async function extractResumeText(
       400,
     );
   }
-  return { kind, text: text.slice(0, EXTRACT_LIMITS.maxChars) };
+  return { kind, text: text.slice(0, EXTRACT_LIMITS.maxChars), twoColumn };
 }

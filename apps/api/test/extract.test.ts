@@ -12,8 +12,9 @@ describe('extractResumeText on the 10 synthetic resumes', () => {
   for (const p of PERSONAS) {
     it(`${p.id} (${p.layout})`, async () => {
       const buf = readFileSync(resolve(FILES, `${p.id}.${ext(p.layout)}`));
-      const { kind, text } = await extractResumeText(buf);
+      const { kind, text, twoColumn } = await extractResumeText(buf);
       expect(kind).toBe(ext(p.layout));
+      expect(twoColumn).toBe(p.layout === 'pdf-sidebar');
       expect(text.toLowerCase()).toContain(p.name.toLowerCase());
       for (const r of p.roles) {
         expect(text).toContain(r.company);
