@@ -99,7 +99,7 @@ model RefreshToken {
 /// A resume upload. The object lives in S3-compatible storage (R2) under `key`.
 model UploadedFile {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String? // null for anonymous uploads (expire with the session)
   key       String   @unique
   fileName  String
   mime      String
@@ -108,7 +108,7 @@ model UploadedFile {
   error     String?
   createdAt DateTime @default(now())
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   imports VaultImport[]
 
   @@index([userId, createdAt])
@@ -308,15 +308,18 @@ model JdCache {
 
 model Job {
   id        String   @id @default(cuid())
-  userId    String
-  jdCacheId String
+  userId    String? // null while it belongs to an anonymous session
+  jdCacheId String? // set once the JD is extracted (or found in the cache)
+  status    String   @default("ready") // pending|ready|failed
+  rawText   String? // normalized JD text awaiting extraction
+  error     String?
   overrides Json? // user-edited must/nice skills
-  source    String // paste|url|extension
+  source    String // paste|url|extension|anon
   sourceUrl String?
   createdAt DateTime @default(now())
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  jdCache       JdCache        @relation(fields: [jdCacheId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jdCache       JdCache?       @relation(fields: [jdCacheId], references: [id])
   optimizations Optimization[]
   applications  Application[]
 
@@ -465,11 +468,15 @@ model Payment {
 
 model AnonSession {
   id             String   @id @default(cuid())
+  /// sha256 of the random token held in the visitor's httpOnly cookie.
+  tokenHash      String   @unique
   ipHash         String
   fpHash         String?
   resumeText     String
+  resumeLayout   Json? // {twoColumn}
   jobId          String?
   optimizationId String?
+  claimedByUserId String?
   createdAt      DateTime @default(now())
   expiresAt      DateTime
 
