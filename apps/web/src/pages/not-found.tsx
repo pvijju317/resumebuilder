@@ -7,7 +7,7 @@ export function NotFoundPage() {
       <p className="tabular text-sm text-subtle">404</p>
       <h1 className="text-xl font-semibold tracking-tight text-text">Page not found</h1>
       <Button variant="secondary" asChild>
-        <Link to="/">Go to dashboard</Link>
+        <Link to="/">Go to home page</Link>
       </Button>
     </main>
   );

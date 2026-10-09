@@ -27,17 +27,17 @@ import {
   X,
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useMe } from '../lib/auth.js';
 import { Wordmark } from './wordmark.js';
 
 export const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/vault', label: 'Vault', icon: Vault },
-  { to: '/jobs', label: 'Jobs', icon: Briefcase },
-  { to: '/tracker', label: 'Tracker', icon: KanbanSquare },
-  { to: '/billing', label: 'Billing', icon: CreditCard },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/app', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/app/vault', label: 'Vault', icon: Vault },
+  { to: '/app/jobs', label: 'Jobs', icon: Briefcase },
+  { to: '/app/tracker', label: 'Tracker', icon: KanbanSquare },
+  { to: '/app/billing', label: 'Billing', icon: CreditCard },
+  { to: '/app/settings', label: 'Settings', icon: Settings },
 ] as const;
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
@@ -47,7 +47,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
         <NavLink
           key={to}
           to={to}
-          end={to === '/'}
+          end={to === '/app'}
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
@@ -123,14 +123,15 @@ export function AppShell() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const title =
-    NAV.find((n) => (n.to === '/' ? pathname === '/' : pathname.startsWith(n.to)))?.label ?? '';
+    NAV.find((n) => (n.to === '/app' ? pathname === '/app' : pathname.startsWith(n.to)))?.label ??
+    '';
 
   return (
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-6 border-r border-border bg-surface px-3 py-4 md:flex">
-        <div className="px-3">
+        <Link to="/" className="px-3" aria-label="Tailor home">
           <Wordmark />
-        </div>
+        </Link>
         <NavItems />
       </aside>
 

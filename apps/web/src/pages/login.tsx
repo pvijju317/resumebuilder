@@ -1,9 +1,10 @@
 import { Button, Card, CardContent, Field, Input } from '@tailor/ui';
 import type { AuthTokens } from '@tailor/shared';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
+import { HeroDemo } from '../marketing/hero-demo.js';
 import { api, ApiError } from '../lib/api.js';
 import { useAuth } from '../lib/auth.js';
 import { Wordmark } from '../layout/wordmark.js';
@@ -34,6 +35,7 @@ export function LoginPage() {
   const { status, signIn } = useAuth();
   const location = useLocation();
   const [params] = useSearchParams();
+  const signup = params.get('mode') === 'signup';
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -58,7 +60,7 @@ export function LoginPage() {
   }, [cooldown]);
 
   if (status === 'authed') {
-    const from = (location.state as { from?: string } | null)?.from ?? '/';
+    const from = (location.state as { from?: string } | null)?.from ?? '/app';
     return <Navigate to={from} replace />;
   }
 
@@ -99,17 +101,27 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
-      <div className="flex w-full max-w-sm flex-col gap-8">
-        <div className="flex flex-col items-center gap-6 text-center">
+    <main className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div className="flex flex-col px-4 py-6 md:px-10">
+        <Link to="/" className="self-start" aria-label="Tailor home">
           <Wordmark />
-          <div className="flex flex-col gap-1">
+        </Link>
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 py-12">
+          <div className="flex flex-col gap-2">
             <h1 className="text-xl font-semibold tracking-tight text-text">
-              {step === 'email' ? 'Sign in to Tailor' : 'Check your email'}
+              {step === 'code'
+                ? 'Check your email'
+                : signup
+                  ? 'Create your account'
+                  : 'Welcome back'}
             </h1>
             <p className="text-sm text-muted">
               {step === 'email' ? (
-                'We’ll email you a 6-digit code. No password needed.'
+                signup ? (
+                  'Free to start. We’ll email you a 6-digit code. No password needed.'
+                ) : (
+                  'We’ll email you a 6-digit code. No password needed.'
+                )
               ) : (
                 <>
                   We sent a code to <span className="font-medium text-text">{email}</span>.
@@ -117,99 +129,131 @@ export function LoginPage() {
               )}
             </p>
           </div>
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              {step === 'email' ? (
+                <form onSubmit={requestCode} className="flex flex-col gap-4" noValidate>
+                  <Field label="Email" error={error ?? undefined}>
+                    <Input
+                      type="email"
+                      name="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </Field>
+                  <Button type="submit" loading={busy} disabled={!email.includes('@')}>
+                    Continue with email
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={verify} className="flex flex-col gap-4" noValidate>
+                  <Field label="Sign-in code" error={error ?? undefined}>
+                    <Input
+                      name="code"
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      pattern="\d{6}"
+                      maxLength={6}
+                      placeholder="123456"
+                      className="tabular text-center text-base tracking-[0.4em]"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      autoFocus
+                    />
+                  </Field>
+                  <Button type="submit" loading={busy} disabled={code.length !== 6}>
+                    Verify and sign in
+                  </Button>
+                  <div className="flex items-center justify-between">
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      onClick={() => {
+                        setStep('email');
+                        setError(null);
+                      }}
+                    >
+                      <ArrowLeft /> Different email
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      disabled={cooldown > 0 || busy}
+                      onClick={() => void requestCode()}
+                    >
+                      {cooldown > 0 ? (
+                        <span className="tabular">Resend in {cooldown}s</span>
+                      ) : (
+                        'Resend code'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {step === 'email' && providers.data?.google ? (
+                <>
+                  <div className="flex items-center gap-3 text-xs text-subtle" aria-hidden>
+                    <span className="h-px flex-1 bg-border" />
+                    or
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                  <Button variant="secondary" asChild>
+                    <a href="/api/v1/auth/google/start">
+                      <GoogleMark /> Continue with Google
+                    </a>
+                  </Button>
+                </>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <p className="text-xs text-subtle">
+            {signup ? 'Already have an account? ' : 'New to Tailor? '}
+            <Link
+              to={signup ? '/login' : '/login?mode=signup'}
+              className="font-medium text-accent-text underline-offset-4 hover:underline"
+            >
+              {signup ? 'Sign in' : 'Create an account'}
+            </Link>
+          </p>
+          <p className="text-xs text-subtle">
+            By continuing you agree to the{' '}
+            <Link to="/legal/terms" className="underline underline-offset-2">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link to="/legal/privacy" className="underline underline-offset-2">
+              Privacy Policy
+            </Link>
+            . You review AI-processing consent before any upload.
+          </p>
         </div>
-
-        <Card>
-          <CardContent className="flex flex-col gap-4">
-            {step === 'email' ? (
-              <form onSubmit={requestCode} className="flex flex-col gap-4" noValidate>
-                <Field label="Email" error={error ?? undefined}>
-                  <Input
-                    type="email"
-                    name="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                </Field>
-                <Button type="submit" loading={busy} disabled={!email.includes('@')}>
-                  Continue with email
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={verify} className="flex flex-col gap-4" noValidate>
-                <Field label="Sign-in code" error={error ?? undefined}>
-                  <Input
-                    name="code"
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    pattern="\d{6}"
-                    maxLength={6}
-                    placeholder="123456"
-                    className="tabular text-center text-base tracking-[0.4em]"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    autoFocus
-                  />
-                </Field>
-                <Button type="submit" loading={busy} disabled={code.length !== 6}>
-                  Verify and sign in
-                </Button>
-                <div className="flex items-center justify-between">
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    onClick={() => {
-                      setStep('email');
-                      setError(null);
-                    }}
-                  >
-                    <ArrowLeft /> Different email
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    disabled={cooldown > 0 || busy}
-                    onClick={() => void requestCode()}
-                  >
-                    {cooldown > 0 ? (
-                      <span className="tabular">Resend in {cooldown}s</span>
-                    ) : (
-                      'Resend code'
-                    )}
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {step === 'email' && providers.data?.google ? (
-              <>
-                <div className="flex items-center gap-3 text-xs text-subtle" aria-hidden>
-                  <span className="h-px flex-1 bg-border" />
-                  or
-                  <span className="h-px flex-1 bg-border" />
-                </div>
-                <Button variant="secondary" asChild>
-                  <a href="/api/v1/auth/google/start">
-                    <GoogleMark /> Continue with Google
-                  </a>
-                </Button>
-              </>
-            ) : null}
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-xs text-subtle">
-          By continuing you agree to the Terms and Privacy Policy. Your resume is processed by AI to
-          tailor it; you’ll review consent before any upload.
-        </p>
       </div>
+      <aside
+        className="hidden flex-col justify-center gap-8 border-l border-border bg-surface-muted px-10 py-12 lg:flex xl:px-16"
+        aria-label="What Tailor does"
+      >
+        <div className="flex max-w-[44ch] flex-col gap-2">
+          <p className="text-lg font-semibold tracking-tight text-text">
+            The same experience, written for the job in front of you.
+          </p>
+          <p className="flex items-center gap-2 text-sm text-muted">
+            <ShieldCheck aria-hidden className="size-4 text-accent-text" strokeWidth={1.5} /> Every
+            fact checked against your vault.
+          </p>
+        </div>
+        <div className="max-w-xl">
+          <HeroDemo />
+        </div>
+      </aside>
     </main>
   );
 }

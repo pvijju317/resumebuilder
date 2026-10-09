@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
     session.set(null);
     qc.clear();
+    window.location.assign('/');
   }, [qc]);
 
   return <Ctx.Provider value={{ status, signIn, signOut }}>{children}</Ctx.Provider>;

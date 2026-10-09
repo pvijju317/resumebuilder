@@ -8,7 +8,7 @@ export function AuthCompletePage() {
   const navigate = useNavigate();
   useEffect(() => {
     void refreshSession().then((ok) =>
-      navigate(ok ? '/' : '/login?error=google', { replace: true }),
+      navigate(ok ? '/app' : '/login?error=google', { replace: true }),
     );
   }, [navigate]);
   return (

@@ -1,16 +1,38 @@
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  EmptyState,
+  cn,
   Skeleton,
   StrengthMeter,
 } from '@tailor/ui';
-import { FileText, KanbanSquare, Upload } from 'lucide-react';
+import { Briefcase, FileCheck2, KanbanSquare, Upload } from 'lucide-react';
 import { useMe } from '../lib/auth.js';
+
+const STEPS = [
+  {
+    icon: Upload,
+    title: 'Build your Career Vault',
+    body: 'Upload your resume and confirm your roles and results.',
+  },
+  {
+    icon: Briefcase,
+    title: 'Add a job',
+    body: 'Paste a job description or a link to see your match.',
+  },
+  {
+    icon: FileCheck2,
+    title: 'Tailor your resume',
+    body: 'Get a version written for that job, with every fact checked.',
+  },
+  {
+    icon: KanbanSquare,
+    title: 'Track applications',
+    body: 'Log where you applied and see which versions get callbacks.',
+  },
+];
 
 export function DashboardPage() {
   const me = useMe();
@@ -26,36 +48,62 @@ export function DashboardPage() {
           </h2>
         )}
         <p className="text-sm text-muted">
-          Build your Career Vault once, then tailor it to every job.
+          Four steps from your current resume to tailored applications.
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <section
+          aria-labelledby="setup-title"
+          className="rounded-[var(--radius-card)] bg-accent-soft p-6"
+        >
+          <h3 id="setup-title" className="text-base font-semibold text-text">
+            Get set up
+          </h3>
+          <ol className="mt-4 flex flex-col gap-2">
+            {STEPS.map((s, i) => (
+              <li
+                key={s.title}
+                className={cn(
+                  'flex items-start gap-4 rounded-[var(--radius-control)] p-4',
+                  i === 0 ? 'bg-surface shadow-card' : '',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-9 shrink-0 items-center justify-center rounded-full [&_svg]:size-4 [&_svg]:stroke-[1.5]',
+                    i === 0 ? 'bg-accent text-accent-fg' : 'bg-surface text-muted',
+                  )}
+                  aria-hidden
+                >
+                  <s.icon />
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="text-sm font-medium text-text">
+                    {s.title}
+                    {i === 0 ? <span className="sr-only"> (next step)</span> : null}
+                  </p>
+                  <p className="text-sm text-muted">{s.body}</p>
+                </div>
+                {i === 0 ? (
+                  <span className="ml-auto shrink-0 self-center rounded-full border border-border px-2.5 py-1 text-xs text-muted">
+                    Opens next release
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <Card className="self-start">
           <CardHeader>
             <CardTitle>Career Vault</CardTitle>
-            <CardDescription>Your confirmed roles, achievements and metrics.</CardDescription>
+            <CardDescription>Strength rises as you add confirmed metrics.</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          <CardContent>
             <StrengthMeter value={0} />
-            <Button disabled>
-              <Upload /> Upload resume
-            </Button>
-            <p className="text-xs text-subtle">Resume upload opens in the next release.</p>
           </CardContent>
         </Card>
-        <div className="flex flex-col gap-4 lg:col-span-2">
-          <EmptyState
-            icon={<FileText />}
-            title="No tailored resumes yet"
-            description="Tailored resumes you create will appear here with their before and after scores."
-          />
-          <EmptyState
-            icon={<KanbanSquare />}
-            title="No applications tracked"
-            description="Applications you log will show here, along with which resume versions get callbacks."
-          />
-        </div>
       </div>
     </div>
   );

@@ -5,7 +5,10 @@ import { latestOtp, uniqueEmail } from './mailpit.js';
 test('email OTP login, session restore and sign out', async ({ page }, info) => {
   const email = uniqueEmail(info.project.name);
 
+  // The landing page is public; the app is not.
   await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Your real experience');
+  await page.goto('/app');
   await expect(page).toHaveURL(/\/login$/);
   await page.getByLabel('Email').fill(email);
   await page.getByRole('button', { name: 'Continue with email' }).click();
@@ -14,7 +17,7 @@ test('email OTP login, session restore and sign out', async ({ page }, info) => 
   await page.getByLabel('Sign-in code').fill(await latestOtp(email));
   await page.getByRole('button', { name: 'Verify and sign in' }).click();
 
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/app');
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
 
   // A full reload restores the session from the httpOnly refresh cookie.
@@ -24,8 +27,8 @@ test('email OTP login, session restore and sign out', async ({ page }, info) => 
   await page.getByRole('button', { name: 'Account menu' }).click();
   await expect(page.getByText(email)).toBeVisible();
   await page.getByRole('menuitem', { name: 'Sign out' }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await page.goto('/');
+  await expect(page).toHaveURL('/');
+  await page.goto('/app');
   await expect(page).toHaveURL(/\/login$/);
 });
 
@@ -40,7 +43,7 @@ test('wrong code shows an inline error', async ({ page }, info) => {
   await expect(page.getByRole('alert')).toHaveText('That code is incorrect.');
 });
 
-for (const path of ['/login', '/styleguide']) {
+for (const path of ['/', '/login', '/styleguide']) {
   for (const scheme of ['light', 'dark'] as const) {
     test(`${path} has no WCAG 2.1 AA violations (${scheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
@@ -77,4 +80,18 @@ test('styleguide renders every section', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
   expect(errors).toEqual([]);
+});
+
+test('landing page: pricing from the API, no horizontal scroll, sign-up path', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Simple pricing in rupees.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pro', level: 3 })).toBeVisible();
+  await page.getByRole('radio', { name: 'Yearly' }).click();
+  await expect(page.getByText(/Save ₹/).first()).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.getByRole('link', { name: 'Start free' }).first().click();
+  await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
 });
