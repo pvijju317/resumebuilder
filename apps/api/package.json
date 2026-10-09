@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.1147.0",
     "@aws-sdk/s3-request-presigner": "3.1147.0",
+    "@mozilla/readability": "0.6.0",
     "@tailor/ai": "workspace:*",
     "@tailor/core": "workspace:*",
     "@tailor/db": "workspace:*",
@@ -24,17 +25,21 @@
     "google-auth-library": "11.2.0",
     "helmet": "8.3.0",
     "ioredis": "6.0.0",
+    "ipaddr.js": "2.5.0",
     "jose": "6.2.12",
+    "jsdom": "30.1.2",
     "mammoth": "1.13.0",
     "nodemailer": "10.0.16",
     "pdfjs-dist": "6.4.299",
     "pino": "10.4.0",
     "pino-http": "11.0.0",
+    "undici": "8.11.2",
     "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/cookie-parser": "1.4.10",
     "@types/express": "5.0.6",
+    "@types/jsdom": "28.0.3",
     "@types/supertest": "7.2.1",
     "pino-pretty": "13.2.0",
     "supertest": "7.3.1"
