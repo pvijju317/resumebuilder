@@ -9,7 +9,9 @@ services:
       POSTGRES_PASSWORD: tailor
       POSTGRES_DB: tailor
     ports: ['5432:5432']
-    volumes: ['pgdata:/var/lib/postgresql/data']
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U tailor']
       interval: 5s
