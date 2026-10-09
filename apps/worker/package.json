@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailor/ai": "workspace:*",
+    "@tailor/core": "workspace:*",
     "@tailor/db": "workspace:*",
     "@tailor/shared": "workspace:*",
     "bullmq": "6.3.11",

@@ -1,3 +1,4 @@
+import { QUEUE_NAMES } from '@tailor/shared';
 import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 
@@ -6,7 +7,7 @@ export type VaultJob =
   | { name: 'vault.parse'; data: { importId: string } }
   | { name: 'vault.gapQuestions'; data: { vaultId: string; userId: string } };
 
-export const VAULT_QUEUE = 'vault';
+export const VAULT_QUEUE = QUEUE_NAMES.vault;
 
 export interface JobQueue {
   enqueue(job: VaultJob): Promise<void>;

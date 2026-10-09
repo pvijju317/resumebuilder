@@ -1,4 +1,5 @@
 export * from './errors.js';
+export * from './queues.js';
 export * from './enums.js';
 export * from './schemas/common.js';
 export * from './schemas/vault.js';

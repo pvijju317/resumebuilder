@@ -348,6 +348,9 @@ importers:
       '@tailor/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@tailor/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@tailor/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -412,6 +415,9 @@ importers:
       dotenv:
         specifier: 18.0.6
         version: 18.0.6
+      zod:
+        specifier: 4.6.5
+        version: 4.6.5
     devDependencies:
       prisma:
         specifier: 7.10.0
