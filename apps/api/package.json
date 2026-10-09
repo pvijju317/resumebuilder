@@ -7,11 +7,13 @@
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "start": "tsx src/server.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:parse": "tsx scripts/eval-parse.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1147.0",
     "@aws-sdk/s3-request-presigner": "3.1147.0",
+    "@tailor/ai": "workspace:*",
     "@tailor/core": "workspace:*",
     "@tailor/db": "workspace:*",
     "@tailor/shared": "workspace:*",

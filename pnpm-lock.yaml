@@ -223,6 +223,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: 3.1147.0
         version: 3.1147.0
+      '@tailor/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@tailor/core':
         specifier: workspace:*
         version: link:../../packages/core

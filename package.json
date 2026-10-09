@@ -20,7 +20,8 @@
     "db:seed": "pnpm --filter @tailor/db run seed",
     "db:generate": "pnpm --filter @tailor/db run generate",
     "eval": "pnpm --filter @tailor/ai --silent run eval",
-    "fixtures:resumes": "tsx evals/resumes/generate.ts"
+    "fixtures:resumes": "tsx evals/resumes/generate.ts",
+    "eval:parse": "pnpm --filter @tailor/api --silent run eval:parse"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
