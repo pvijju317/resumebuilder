@@ -36,7 +36,7 @@ export default tseslint.config(
     rules: reactHooks.configs.recommended.rules,
   },
   {
-    files: ['**/scripts/**', '**/eval/cli.ts', '**/seed.ts', '**/*.config.ts'],
+    files: ['**/scripts/**', '**/eval/cli.ts', 'evals/**', '**/seed.ts', '**/*.config.ts'],
     rules: { 'no-console': 'off' },
   },
   prettier,

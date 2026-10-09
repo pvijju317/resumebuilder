@@ -1,0 +1,194 @@
+[
+  {
+    "id": "r01-fresher-cs",
+    "name": "Kavya Menon",
+    "roles": [
+      {
+        "company": "Northwind Payments",
+        "title": "Software Engineering Intern",
+        "startDate": "2025-05",
+        "endDate": "2025-07"
+      }
+    ]
+  },
+  {
+    "id": "r02-data-analyst",
+    "name": "Rohan Iyer",
+    "roles": [
+      {
+        "company": "Contoso Retail",
+        "title": "Senior Data Analyst",
+        "startDate": "2023-02",
+        "endDate": null
+      },
+      {
+        "company": "Woodgrove Analytics",
+        "title": "Data Analyst",
+        "startDate": "2021-06",
+        "endDate": "2023-01"
+      }
+    ]
+  },
+  {
+    "id": "r03-senior-pm-sidebar",
+    "name": "Hannah Clarke",
+    "roles": [
+      {
+        "company": "Adatum Pay",
+        "title": "Senior Product Manager",
+        "startDate": "2021-09",
+        "endDate": null
+      },
+      {
+        "company": "Northwind Commerce",
+        "title": "Product Manager",
+        "startDate": "2017-03",
+        "endDate": "2021-08"
+      },
+      {
+        "company": "Litware Labs",
+        "title": "Associate Product Manager",
+        "startDate": "2015-07",
+        "endDate": "2017-02"
+      }
+    ]
+  },
+  {
+    "id": "r04-teacher-switcher",
+    "name": "Maria Lopez",
+    "roles": [
+      {
+        "company": "Lincoln High School",
+        "title": "Science Teacher",
+        "startDate": "2018-08",
+        "endDate": null
+      },
+      {
+        "company": "Riverside Middle School",
+        "title": "Teaching Assistant",
+        "startDate": "2016-09",
+        "endDate": "2018-06"
+      }
+    ]
+  },
+  {
+    "id": "r05-sales-manager-table",
+    "name": "Vikram Shetty",
+    "roles": [
+      {
+        "company": "Tailspin Consumer",
+        "title": "Regional Sales Manager",
+        "startDate": "2020-04",
+        "endDate": null
+      },
+      {
+        "company": "Northwind FMCG",
+        "title": "Area Sales Manager",
+        "startDate": "2014-06",
+        "endDate": "2020-03"
+      },
+      {
+        "company": "Contoso Foods",
+        "title": "Sales Officer",
+        "startDate": "2013-01",
+        "endDate": "2014-05"
+      }
+    ]
+  },
+  {
+    "id": "r06-nurse-uk",
+    "name": "Aoife Byrne",
+    "roles": [
+      {
+        "company": "Westbrook General Hospital",
+        "title": "Senior Staff Nurse, ICU",
+        "startDate": "2019-01",
+        "endDate": null
+      },
+      {
+        "company": "Harbourside Clinic",
+        "title": "Staff Nurse",
+        "startDate": "2016-09",
+        "endDate": "2018-12"
+      }
+    ]
+  },
+  {
+    "id": "r07-devops-sidebar",
+    "name": "Arjun Nair",
+    "roles": [
+      {
+        "company": "Litware Cloud",
+        "title": "Senior DevOps Engineer",
+        "startDate": "2022-03",
+        "endDate": null
+      },
+      {
+        "company": "Fabrikam Systems",
+        "title": "DevOps Engineer",
+        "startDate": "2020-03",
+        "endDate": "2022-02"
+      },
+      {
+        "company": "Contoso Hosting",
+        "title": "Systems Administrator",
+        "startDate": "2018-07",
+        "endDate": "2020-02"
+      }
+    ]
+  },
+  {
+    "id": "r08-finance-txt",
+    "name": "Neha Kulkarni",
+    "roles": [
+      {
+        "company": "Woodgrove Bank",
+        "title": "Financial Analyst",
+        "startDate": "2022-07",
+        "endDate": null
+      },
+      {
+        "company": "Northwind Capital",
+        "title": "Finance Associate",
+        "startDate": "2020-08",
+        "endDate": "2022-06"
+      }
+    ]
+  },
+  {
+    "id": "r09-marketing-europass",
+    "name": "Lena Vogel",
+    "roles": [
+      {
+        "company": "Tailspin Software GmbH",
+        "title": "Marketing Manager",
+        "startDate": "2021-04",
+        "endDate": null
+      },
+      {
+        "company": "Adatum Media",
+        "title": "Content Marketing Specialist",
+        "startDate": "2018-10",
+        "endDate": "2021-03"
+      }
+    ]
+  },
+  {
+    "id": "r10-ux-designer",
+    "name": "Siddharth Rao",
+    "roles": [
+      {
+        "company": "Litware Health",
+        "title": "Senior Product Designer",
+        "startDate": "2021-01",
+        "endDate": null
+      },
+      {
+        "company": "Contoso Fintech",
+        "title": "UX Designer",
+        "startDate": "2018-01",
+        "endDate": "2021-01"
+      }
+    ]
+  }
+]

@@ -1,0 +1,21 @@
+NEHA KULKARNI
+Financial Analyst
+neha.kulkarni.fin@example.com | +91 98220 66778 | Mumbai, Maharashtra
+linkedin.com/in/neha-kulkarni-fin
+
+SUMMARY
+Corporate finance analyst covering FP&A, variance analysis and board reporting.
+
+EXPERIENCE
+Woodgrove Bank -- Financial Analyst (2022-07 - Present)
+* Owned monthly variance analysis for a ₹900 Cr cost base
+* Built a rolling forecast model in Excel used by 6 business units
+
+Northwind Capital -- Finance Associate (2020-08 - 2022-06)
+* Prepared quarterly board packs
+
+EDUCATION
+B.Com, Accounting, Contoso College of Commerce, 2017 - 2020
+
+SKILLS
+Financial modelling, Excel, FP&A, Power BI
