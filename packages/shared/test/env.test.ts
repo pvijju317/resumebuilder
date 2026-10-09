@@ -70,3 +70,10 @@ describe('contracts', () => {
     expect(JSON.stringify(e)).toBe('{"error":{"code":"NOT_FOUND","message":"Not found"}}');
   });
 });
+
+describe('ProfilePatch', () => {
+  it('does not inject defaults for omitted fields', async () => {
+    const { ProfilePatch } = await import('../src/index.js');
+    expect(ProfilePatch.parse({ headline: 'x' })).toEqual({ headline: 'x' });
+  });
+});

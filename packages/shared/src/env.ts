@@ -71,6 +71,19 @@ export const ServerEnv = AiEnv.extend({
   SMTP_PASS: optional,
   SES_FROM: z.string().min(3),
   AWS_REGION: z.string().default('ap-south-1'),
+  /** S3-compatible object storage. Cloudflare R2: endpoint https://<account>.r2.cloudflarestorage.com, region auto. */
+  S3_ENDPOINT: optional,
+  S3_REGION: z.string().default('auto'),
+  S3_BUCKET: optional,
+  S3_ACCESS_KEY_ID: optional,
+  S3_SECRET_ACCESS_KEY: optional,
+  S3_FORCE_PATH_STYLE: bool,
+  FILE_MAX_BYTES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(5 * 1024 * 1024),
+  UPLOAD_URL_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   JWT_SECRET: z.string().min(32),
   REFRESH_SECRET: z.string().min(32),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().positive().default(900),
@@ -84,6 +97,8 @@ export const ServerEnv = AiEnv.extend({
   AUTH_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(5),
   OTP_REQUESTS_PER_EMAIL_PER_HOUR: z.coerce.number().int().positive().default(5),
   API_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(120),
+  /** Each vault build is one premium AI call. */
+  VAULT_BUILDS_PER_HOUR: z.coerce.number().int().positive().default(10),
   /** Comma-separated origins allowed by CORS (the web app is same-origin via proxy). */
   CORS_ORIGINS: z.string().default(''),
 });

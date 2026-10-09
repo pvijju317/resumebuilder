@@ -7,6 +7,7 @@ export type AppErrorCode =
   | 'VALIDATION'
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
+  | 'CONSENT_REQUIRED'
   | 'NOT_FOUND'
   | 'CONFLICT'
   | 'RATE_LIMITED'

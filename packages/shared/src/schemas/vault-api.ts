@@ -226,8 +226,16 @@ export const SkillBody = z.object({
 });
 export const SkillPatch = SkillBody.partial();
 
-export const ProfilePatch = VaultProfile.partial().extend({
+/** Explicit (no defaults): Zod `.partial()` would still inject VaultProfile defaults like name ''. */
+export const ProfilePatch = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  email: z.string().trim().max(200).nullable().optional(),
+  phone: z.string().trim().max(40).nullable().optional(),
+  location: z.string().trim().max(120).nullable().optional(),
+  address: z.string().trim().max(300).nullable().optional(),
+  headline: z.string().trim().max(200).nullable().optional(),
   links: z.array(Link).max(6).optional(),
+  workAuth: z.string().trim().max(200).nullable().optional(),
 });
 
 export const ReorderBody = z.object({
