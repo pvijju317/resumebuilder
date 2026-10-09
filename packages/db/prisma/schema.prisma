@@ -114,6 +114,17 @@ model UploadedFile {
   @@index([userId, createdAt])
 }
 
+/// Upload bytes for STORAGE_DRIVER=db (serverless trial without object storage). Short-lived.
+model StoredObject {
+  key       String   @id
+  mime      String
+  size      Int
+  body      Bytes
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // ---------- Career Vault ----------
 
 /// One run of `vault.parse`: extracted text in, reviewable draft out.

@@ -72,7 +72,11 @@ export const ServerEnv = AiEnv.extend({
   SES_FROM: z.string().min(3),
   AWS_REGION: z.string().default('ap-south-1'),
   /** disk: local temp folder (dev only, files auto-deleted); s3: S3-compatible (Cloudflare R2). */
-  STORAGE_DRIVER: z.enum(['disk', 's3']).default('disk'),
+  STORAGE_DRIVER: z.enum(['disk', 'db', 's3']).default('disk'),
+  /** bullmq: Redis queue + long-running worker. inline: run jobs in the API process after the response (serverless). */
+  QUEUE_DRIVER: z.enum(['bullmq', 'inline']).default('bullmq'),
+  /** Shared secret for scheduled maintenance (Vercel Cron sends it as a Bearer token). */
+  CRON_SECRET: optional,
   STORAGE_DISK_DIR: z.string().default('.local-storage'),
   /** Raw uploads are deleted after this many hours (only extracted text is kept). */
   FILE_RETENTION_HOURS: z.coerce.number().int().positive().default(24),

@@ -117,7 +117,10 @@ export type TaskOutput<T extends TaskName> = z.infer<(typeof TASKS)[T]['output']
 
 export const isTaskName = (s: string): s is TaskName => s in TASKS;
 
-const PROMPTS_DIR = resolve(import.meta.dirname, '../prompts');
+// AI_PROMPTS_DIR lets bundled deployments ship prompts next to the bundle.
+const PROMPTS_DIR = process.env['AI_PROMPTS_DIR']
+  ? resolve(process.cwd(), process.env['AI_PROMPTS_DIR'])
+  : resolve(import.meta.dirname, '../prompts');
 const cache = new Map<string, string>();
 
 export function loadPrompt(task: string, version: string): string {
