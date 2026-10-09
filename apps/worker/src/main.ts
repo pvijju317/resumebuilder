@@ -8,6 +8,7 @@ import { createPrisma } from '@tailor/db';
 import { QUEUE_NAMES } from '@tailor/shared';
 import { ServerEnv, parseEnv } from '@tailor/shared/env';
 import { PrismaCallLogSink } from './call-log-sink.js';
+import { runJdExtract } from './jobs/jd.js';
 import { runGapQuestions, runVaultParse } from './jobs/vault.js';
 import { PRIORITY, QUEUES, processAiJob, type AiJobData } from './queues.js';
 
@@ -44,35 +45,42 @@ const worker = new Worker<AiJobData>(
   { connection, concurrency: 8 },
 );
 
-type VaultJobData = { importId: string; requeued?: boolean } | { vaultId: string; userId: string };
-const vaultQueue = new Queue<VaultJobData>(QUEUE_NAMES.vault, { connection });
-const vaultWorker = new Worker<VaultJobData>(
-  QUEUE_NAMES.vault,
+type BackgroundJobData =
+  | { importId: string; requeued?: boolean }
+  | { vaultId: string; userId: string }
+  | { jobId: string; requeued?: boolean };
+const backgroundQueue = new Queue<BackgroundJobData>(QUEUE_NAMES.background, { connection });
+const backgroundWorker = new Worker<BackgroundJobData>(
+  QUEUE_NAMES.background,
   async (job) => {
     const deps = { prisma, ai };
+    const requeueAs = (name: string, data: BackgroundJobData) => async (delay: number) => {
+      await backgroundQueue.add(name, { ...data, requeued: true }, { delay });
+    };
     if (job.name === 'vault.parse' && 'importId' in job.data) {
-      const data = job.data;
       return runVaultParse(
         deps,
-        data.importId,
-        async (delay) => {
-          await vaultQueue.add(
-            'vault.parse',
-            { importId: data.importId, requeued: true },
-            { delay },
-          );
-        },
-        data.requeued === true,
+        job.data.importId,
+        requeueAs(job.name, job.data),
+        job.data.requeued === true,
       );
     }
     if (job.name === 'vault.gapQuestions' && 'vaultId' in job.data)
       return runGapQuestions(deps, job.data);
-    throw new Error(`unknown vault job ${job.name}`);
+    if (job.name === 'jd.extract' && 'jobId' in job.data) {
+      return runJdExtract(
+        deps,
+        job.data.jobId,
+        requeueAs(job.name, job.data),
+        job.data.requeued === true,
+      );
+    }
+    throw new Error(`unknown background job ${job.name}`);
   },
   { connection, concurrency: 4 },
 );
-vaultWorker.on('failed', (job, err) =>
-  logger.warn({ jobId: job?.id, name: job?.name, err: err.message }, 'vault job failed'),
+backgroundWorker.on('failed', (job, err) =>
+  logger.warn({ jobId: job?.id, name: job?.name, err: err.message }, 'background job failed'),
 );
 
 worker.on('failed', (job, err) =>
@@ -84,8 +92,8 @@ worker.on('ready', () =>
 
 async function shutdown(signal: string) {
   logger.info(`${signal} received, draining`);
-  await Promise.all([worker.close(), vaultWorker.close()]);
-  await Promise.all([aiQueue.close(), vaultQueue.close()]);
+  await Promise.all([worker.close(), backgroundWorker.close()]);
+  await Promise.all([aiQueue.close(), backgroundQueue.close()]);
   await Promise.allSettled([prisma.$disconnect(), connection.quit(), limiterRedis.quit()]);
   process.exit(0);
 }
