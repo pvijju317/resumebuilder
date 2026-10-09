@@ -1,0 +1,32 @@
+# Local development services. Started with `docker compose up -d` from the repo root.
+# S3/SES emulation is intentionally absent until Phase 1 needs it (see docs/phase-0-report.md).
+name: tailor
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tailor
+      POSTGRES_PASSWORD: tailor
+      POSTGRES_DB: tailor
+    ports: ['5432:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tailor']
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ['6379:6379']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+
+  # Mailpit: maintained drop-in for MailHog (same SMTP 1025 / UI 8025 ports, native arm64).
+  mail:
+    image: axllent/mailpit:v1.27
+    ports: ['1025:1025', '8025:8025']
+
+volumes:
+  pgdata:

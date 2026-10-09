@@ -1,0 +1,40 @@
+{
+  "name": "tailor",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@tailor/web --filter=@tailor/api --filter=@tailor/worker",
+    "build": "turbo run build",
+    "lint": "eslint . --max-warnings=0 && bash scripts/check-todos.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "playwright test",
+    "db:migrate": "pnpm --filter @tailor/db migrate",
+    "db:deploy": "pnpm --filter @tailor/db deploy",
+    "db:seed": "pnpm --filter @tailor/db seed",
+    "db:generate": "pnpm --filter @tailor/db generate",
+    "eval": "pnpm --filter @tailor/ai --silent eval"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.0",
+    "@types/node": "22.20.5",
+    "eslint": "10.12.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "prettier": "3.9.9",
+    "tsx": "4.23.15",
+    "turbo": "2.11.7",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3",
+    "@vitest/coverage-v8": "5.0.3"
+  }
+}
