@@ -58,7 +58,7 @@ const builtins = new Set([...builtinModules, ...builtinModules.map((m) => `node:
 const external = new Set();
 const result = await build({
   entryPoints: [join(ROOT, 'apps/api/src/vercel.ts')],
-  outfile: join(FUNC, 'index.mjs'),
+  outfile: join(FUNC, 'app.mjs'),
   bundle: true,
   platform: 'node',
   format: 'esm',
@@ -154,6 +154,27 @@ if (mb > 245) throw new Error(`function is ${mb.toFixed(1)} MB; Vercel's limit i
 
 // 4. Prompts ship beside the bundle (read at runtime via AI_PROMPTS_DIR).
 cpSync(join(ROOT, 'packages/ai/prompts'), join(FUNC, 'prompts'), { recursive: true });
+
+// Thin launcher: loads the bundle dynamically so a failed import (e.g. a missing package) is
+// reported as a 503 with the reason instead of an opaque FUNCTION_INVOCATION_FAILED.
+writeFileSync(
+  join(FUNC, 'index.mjs'),
+  `let mod;
+let loadError;
+try {
+  mod = await import('./app.mjs');
+} catch (e) {
+  loadError = e;
+  console.error('API bundle failed to load', e);
+}
+export default function handler(req, res) {
+  if (mod) return mod.default(req, res);
+  res.statusCode = 503;
+  res.setHeader('content-type', 'application/json');
+  res.end(JSON.stringify({ error: { code: 'BOOT_FAILED', message: String(loadError && loadError.message || loadError).slice(0, 300) } }));
+}
+`,
+);
 
 writeFileSync(
   join(FUNC, '.vc-config.json'),
