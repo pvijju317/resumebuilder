@@ -95,6 +95,8 @@ export const ServerEnv = AiEnv.extend({
   REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(30),
   OTP_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  TURNSTILE_SITE_KEY: optional,
+  TURNSTILE_SECRET: optional,
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
   ADMIN_EMAIL: z.email().optional(),
@@ -104,6 +106,11 @@ export const ServerEnv = AiEnv.extend({
   API_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(120),
   /** Each vault build is one premium AI call. */
   VAULT_BUILDS_PER_HOUR: z.coerce.number().int().positive().default(10),
+  /** New jobs per user per hour (each uncached JD costs one AI call). */
+  JOBS_PER_HOUR: z.coerce.number().int().positive().default(30),
+  /** Anonymous score checks per IP per 24 h (PRD F1 abuse limits). */
+  ANON_CHECKS_PER_IP_PER_DAY: z.coerce.number().int().positive().default(10),
+  ANON_SESSION_TTL_HOURS: z.coerce.number().int().positive().default(72),
   /** Comma-separated origins allowed by CORS (the web app is same-origin via proxy). */
   CORS_ORIGINS: z.string().default(''),
 });

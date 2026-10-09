@@ -9,3 +9,4 @@ export * from './schemas/auth.js';
 export * from './schemas/plan.js';
 export * from './schemas/ai-tasks.js';
 export * from './schemas/vault-api.js';
+export * from './schemas/jobs-api.js';

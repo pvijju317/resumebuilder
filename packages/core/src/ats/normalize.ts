@@ -1,4 +1,10 @@
-import { lemmatizeNoun, lemmatizeVerb } from 'wink-lemmatizer';
+import { createRequire } from 'node:module';
+
+// wink-lemmatizer is untyped CommonJS; load it with a minimal typed surface.
+const { lemmatizeNoun, lemmatizeVerb } = createRequire(import.meta.url)('wink-lemmatizer') as {
+  lemmatizeNoun(word: string): string;
+  lemmatizeVerb(word: string): string;
+};
 import aliasSource from '../../data/skill-aliases.json' with { type: 'json' };
 import { defaultAliasMap, normalizeSkillText, skillKey } from '../skills.js';
 
