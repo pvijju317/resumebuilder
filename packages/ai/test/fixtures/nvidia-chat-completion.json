@@ -1,0 +1,13 @@
+{
+  "id": "chatcmpl-synthetic",
+  "object": "chat.completion",
+  "model": "nvidia/nemotron-3-super-120b-a12b",
+  "choices": [
+    {
+      "index": 0,
+      "message": { "role": "assistant", "content": "{\"ok\":true}", "reasoning_content": null },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 42, "completion_tokens": 7, "total_tokens": 49 }
+}
