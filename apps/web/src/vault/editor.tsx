@@ -220,6 +220,82 @@ function AchievementModal({
   );
 }
 
+const PROFILE_FIELDS: {
+  name: 'name' | 'headline' | 'email' | 'phone' | 'location' | 'workAuth';
+  label: string;
+}[] = [
+  { name: 'name', label: 'Full name' },
+  { name: 'headline', label: 'Headline' },
+  { name: 'email', label: 'Email' },
+  { name: 'phone', label: 'Phone' },
+  { name: 'location', label: 'Location' },
+  { name: 'workAuth', label: 'Work authorization (optional)' },
+];
+
+function ProfileModal({
+  profile,
+  onClose,
+  onSave,
+  saving,
+  error,
+}: {
+  profile: VaultDto['profile'];
+  onClose: () => void;
+  onSave: (v: Record<string, string | null>) => void;
+  saving: boolean;
+  error: string | null;
+}) {
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(PROFILE_FIELDS.map((f) => [f.name, profile[f.name] ?? ''])),
+  );
+  return (
+    <Modal
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title="Edit profile"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            loading={saving}
+            disabled={!values['name']?.trim()}
+            onClick={() =>
+              onSave(
+                Object.fromEntries(
+                  PROFILE_FIELDS.map((f) => [
+                    f.name,
+                    values[f.name]?.trim() || (f.name === 'name' ? '' : null),
+                  ]),
+                ),
+              )
+            }
+          >
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        {PROFILE_FIELDS.map((f) => (
+          <Field key={f.name} label={f.label}>
+            <Input
+              value={values[f.name]}
+              onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+            />
+          </Field>
+        ))}
+      </div>
+      {error ? (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      ) : null}
+    </Modal>
+  );
+}
+
 function RowActions({
   hidden,
   onToggle,
@@ -339,6 +415,7 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
   const [editing, setEditing] = useState<Editing>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ path: string; label: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   const save = useVaultMutation((v: { path: string; method: string; body?: unknown }) =>
     api<VaultDto>(v.path, { method: v.method, body: v.body }),
@@ -510,7 +587,10 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
                 .filter(Boolean)
                 .join(' · ')}
             </p>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setEditingProfile(true)}>
+                <Pencil /> Edit profile
+              </Button>
               <Button variant="secondary" size="sm" onClick={onImport}>
                 <FileUp /> Import another resume
               </Button>
@@ -600,7 +680,7 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
         count={vault.projects.length}
         onAdd={() => setEditing({ kind: 'projects', id: null })}
       >
-        {vault.projects.map((p) => (
+        {vault.projects.map((p, i) => (
           <Card key={p.id} className={cn(p.hidden && 'opacity-60')}>
             <CardContent className="flex flex-col gap-3">
               <div className="flex items-start gap-3">
@@ -615,6 +695,24 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
                   onEdit={() => setEditing({ kind: 'projects', id: p.id })}
                   onDelete={() =>
                     setConfirmDelete({ path: `/vault/projects/${p.id}`, label: 'project' })
+                  }
+                  onUp={
+                    i > 0
+                      ? () =>
+                          reorder(
+                            'projects',
+                            swap(vault.projects, i, i - 1).map((y) => y.id),
+                          )
+                      : undefined
+                  }
+                  onDown={
+                    i < vault.projects.length - 1
+                      ? () =>
+                          reorder(
+                            'projects',
+                            swap(vault.projects, i, i + 1).map((y) => y.id),
+                          )
+                      : undefined
                   }
                 />
               </div>
@@ -693,6 +791,20 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
             editing.id
               ? run(`/vault/achievements/${editing.id}`, 'PATCH', { text }, close)
               : run('/vault/achievements', 'POST', { ...editing.parent, text }, close)
+          }
+        />
+      ) : null}
+      {editingProfile ? (
+        <ProfileModal
+          profile={vault.profile}
+          saving={save.isPending}
+          error={error}
+          onClose={() => {
+            setEditingProfile(false);
+            setError(null);
+          }}
+          onSave={(values) =>
+            run('/vault/profile', 'PATCH', values, () => setEditingProfile(false))
           }
         />
       ) : null}

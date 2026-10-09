@@ -139,6 +139,11 @@ test('career vault: onboarding, consent, build, review, confirm, edit, strengthe
   await expect(page.getByText('Jul 2022 to Present')).toBeVisible();
   await expectAccessible(page);
 
+  await page.getByRole('button', { name: 'Edit profile' }).click();
+  await page.getByLabel('Headline', { exact: true }).fill('FP&A Analyst');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('FP&A Analyst')).toBeVisible();
+
   await page.getByRole('button', { name: 'Add certification' }).click();
   await page.getByLabel('Certification', { exact: true }).fill('CFA Level 1');
   await page.getByLabel('Issuer', { exact: true }).fill('CFA Institute');
