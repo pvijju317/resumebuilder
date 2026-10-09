@@ -11,6 +11,8 @@ import { SectionPage } from './pages/section.js';
 import { StyleguidePage } from './pages/styleguide.js';
 import { StrengthenPage } from './vault/strengthen.js';
 import { WelcomePage } from './pages/welcome.js';
+import { CheckResultPage } from './check/check-result.js';
+import { JobPage, JobsPage } from './jobs/jobs-pages.js';
 import { VaultPage } from './vault/vault-page.js';
 
 export function App() {
@@ -20,6 +22,7 @@ export function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth/complete" element={<AuthCompletePage />} />
       <Route path="/legal/:doc" element={<LegalPage />} />
+      <Route path="/check/:id" element={<CheckResultPage />} />
       <Route path="/styleguide" element={<StyleguidePage />} />
       <Route
         path="/app"
@@ -33,15 +36,8 @@ export function App() {
         <Route path="welcome" element={<WelcomePage />} />
         <Route path="vault" element={<VaultPage />} />
         <Route path="vault/strengthen" element={<StrengthenPage />} />
-        <Route
-          path="jobs"
-          element={
-            <SectionPage
-              title="Jobs"
-              description="Paste a job description or URL to score and tailor your resume."
-            />
-          }
-        />
+        <Route path="jobs" element={<JobsPage />} />
+        <Route path="jobs/:id" element={<JobPage />} />
         <Route
           path="tracker"
           element={

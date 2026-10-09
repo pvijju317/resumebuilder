@@ -5,10 +5,11 @@ import { useAuth } from '../lib/auth.js';
 import { SIGNUP_LABEL } from './sections.js';
 
 const LINKS = [
-  ['How it works', '#how'],
-  ['Fact Guard', '#fact-guard'],
-  ['Pricing', '#pricing'],
-  ['FAQ', '#faq'],
+  ['ATS check', '/#check'],
+  ['How it works', '/#how'],
+  ['Fact Guard', '/#fact-guard'],
+  ['Pricing', '/#pricing'],
+  ['FAQ', '/#faq'],
 ] as const;
 
 export function SiteNav() {

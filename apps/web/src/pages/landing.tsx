@@ -1,6 +1,7 @@
 import { Button } from '@tailor/ui';
 import { ArrowRight, Globe, MousePointerClick, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { CheckForm } from '../check/check-form.js';
 import { Faq } from '../marketing/faq.js';
 import { HeroDemo } from '../marketing/hero-demo.js';
 import { Pricing } from '../marketing/pricing.js';
@@ -49,12 +50,12 @@ export function LandingPage() {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Button asChild size="lg">
-                <Link to="/login?mode=signup">
-                  {SIGNUP_LABEL} <ArrowRight />
-                </Link>
+                <a href="#check">
+                  Check my ATS score <ArrowRight />
+                </a>
               </Button>
               <Button asChild size="lg" variant="secondary">
-                <a href="#how">See how it works</a>
+                <Link to="/login?mode=signup">{SIGNUP_LABEL}</Link>
               </Button>
             </div>
           </div>
@@ -80,6 +81,21 @@ export function LandingPage() {
             ))}
           </ul>
         </Reveal>
+
+        <section id="check" aria-labelledby="check-title" className="scroll-mt-24 pt-20 md:pt-28">
+          <Reveal className="mb-8 flex max-w-[60ch] flex-col gap-3">
+            <h2
+              id="check-title"
+              className="text-xl font-semibold tracking-tight text-text md:text-2xl"
+            >
+              Check your resume against a job.
+            </h2>
+            <p className="text-base text-muted">
+              Add both and see your ATS score in under a minute. No account needed.
+            </p>
+          </Reveal>
+          <CheckForm />
+        </section>
 
         <HowItWorks />
         <FactGuardSection />

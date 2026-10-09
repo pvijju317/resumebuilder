@@ -105,6 +105,17 @@ export function DashboardPage() {
                       {hasVault ? 'Open vault' : 'Start'} <ArrowRight />
                     </Link>
                   </Button>
+                ) : i === 1 ? (
+                  <Button
+                    asChild
+                    size="sm"
+                    variant={hasVault ? 'primary' : 'secondary'}
+                    className="ml-auto shrink-0 self-center"
+                  >
+                    <Link to="/app/jobs">
+                      Add job <ArrowRight />
+                    </Link>
+                  </Button>
                 ) : (
                   <span className="ml-auto shrink-0 self-center rounded-full border border-border px-2.5 py-1 text-xs text-muted">
                     Opens next release
