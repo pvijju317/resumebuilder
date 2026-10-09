@@ -7,9 +7,7 @@ import { AiClient, RedisRateLimiter } from '@tailor/ai';
 import { createPrisma } from '@tailor/db';
 import { QUEUE_NAMES } from '@tailor/shared';
 import { ServerEnv, parseEnv } from '@tailor/shared/env';
-import { PrismaCallLogSink } from './call-log-sink.js';
-import { runJdExtract } from './jobs/jd.js';
-import { runGapQuestions, runVaultParse } from './jobs/vault.js';
+import { PrismaCallLogSink, runBackgroundJob, type BackgroundJobData } from '@tailor/jobs';
 import { PRIORITY, QUEUES, processAiJob, type AiJobData } from './queues.js';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
@@ -45,38 +43,13 @@ const worker = new Worker<AiJobData>(
   { connection, concurrency: 8 },
 );
 
-type BackgroundJobData =
-  | { importId: string; requeued?: boolean }
-  | { vaultId: string; userId: string }
-  | { jobId: string; requeued?: boolean };
 const backgroundQueue = new Queue<BackgroundJobData>(QUEUE_NAMES.background, { connection });
 const backgroundWorker = new Worker<BackgroundJobData>(
   QUEUE_NAMES.background,
-  async (job) => {
-    const deps = { prisma, ai };
-    const requeueAs = (name: string, data: BackgroundJobData) => async (delay: number) => {
-      await backgroundQueue.add(name, { ...data, requeued: true }, { delay });
-    };
-    if (job.name === 'vault.parse' && 'importId' in job.data) {
-      return runVaultParse(
-        deps,
-        job.data.importId,
-        requeueAs(job.name, job.data),
-        job.data.requeued === true,
-      );
-    }
-    if (job.name === 'vault.gapQuestions' && 'vaultId' in job.data)
-      return runGapQuestions(deps, job.data);
-    if (job.name === 'jd.extract' && 'jobId' in job.data) {
-      return runJdExtract(
-        deps,
-        job.data.jobId,
-        requeueAs(job.name, job.data),
-        job.data.requeued === true,
-      );
-    }
-    throw new Error(`unknown background job ${job.name}`);
-  },
+  (job) =>
+    runBackgroundJob({ prisma, ai }, job.name, job.data, async (name, data, delay) => {
+      await backgroundQueue.add(name, data, { delay });
+    }),
   { connection, concurrency: 4 },
 );
 backgroundWorker.on('failed', (job, err) =>

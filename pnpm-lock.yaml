@@ -372,6 +372,9 @@ importers:
       '@tailor/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@tailor/jobs':
+        specifier: workspace:*
+        version: link:../../packages/jobs
       '@tailor/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -443,6 +446,25 @@ importers:
       prisma:
         specifier: 7.10.0
         version: 7.10.0(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(magicast@0.5.5)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@6.0.3)
+
+  packages/jobs:
+    dependencies:
+      '@tailor/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@tailor/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tailor/db':
+        specifier: workspace:*
+        version: link:../db
+      '@tailor/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      dotenv:
+        specifier: 18.0.6
+        version: 18.0.6
 
   packages/shared:
     dependencies:

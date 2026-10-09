@@ -8,7 +8,7 @@ import {
   fillContacts,
   runGapQuestions,
   runVaultParse,
-} from '../src/jobs/vault.js';
+} from '../src/vault.js';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
 const prisma = createPrisma(process.env['DATABASE_URL_TEST']!);

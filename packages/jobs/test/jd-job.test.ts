@@ -4,7 +4,7 @@ import { jdHash } from '@tailor/core/ats';
 import { createPrisma } from '@tailor/db';
 import { AppError } from '@tailor/shared';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { JD_FAILED_MESSAGE, runJdExtract } from '../src/jobs/jd.js';
+import { JD_FAILED_MESSAGE, runJdExtract } from '../src/jd.js';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
 const prisma = createPrisma(process.env['DATABASE_URL_TEST']!);

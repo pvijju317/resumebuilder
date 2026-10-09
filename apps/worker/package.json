@@ -13,6 +13,7 @@
     "@tailor/ai": "workspace:*",
     "@tailor/core": "workspace:*",
     "@tailor/db": "workspace:*",
+    "@tailor/jobs": "workspace:*",
     "@tailor/shared": "workspace:*",
     "bullmq": "6.3.11",
     "dotenv": "18.0.6",

@@ -1,7 +1,7 @@
 import { AppError } from '@tailor/shared';
 import type { AiClient } from '@tailor/ai';
 import { describe, expect, it, vi } from 'vitest';
-import { estimateCostUsd } from '../src/call-log-sink.js';
+import { estimateCostUsd } from '@tailor/jobs';
 import { REQUEUE_DELAY_MS, processAiJob, type AiJobData } from '../src/queues.js';
 
 const job: AiJobData = { task: 'jd.extract', input: { text: 'x' }, userId: 'u1' };
