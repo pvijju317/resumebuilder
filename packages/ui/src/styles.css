@@ -1,0 +1,205 @@
+/*
+ * Tailor design tokens. Components use semantic tokens only, so dark mode is a token swap,
+ * never per-component overrides (CLAUDE.md design rules). Accent is configurable via
+ * --tailor-accent* on :root.
+ */
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@source './';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  color-scheme: light;
+  --tailor-accent: #4338ca;
+  --tailor-accent-hover: #3730a3;
+  --tailor-accent-text: #4338ca;
+
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-muted: #f4f4f5;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --text: #18181b;
+  --text-muted: #52525b;
+  --text-subtle: #71717a;
+
+  --accent: var(--tailor-accent);
+  --accent-hover: var(--tailor-accent-hover);
+  --accent-fg: #ffffff;
+  --accent-text: var(--tailor-accent-text);
+  --accent-soft: #eef2ff;
+
+  --success: #15803d;
+  --success-soft: #f0fdf4;
+  --warning: #b45309;
+  --warning-soft: #fffbeb;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+
+  --shadow-card: 0 1px 2px rgb(24 24 27 / 0.04), 0 1px 1px rgb(24 24 27 / 0.02);
+  --shadow-overlay: 0 8px 24px rgb(24 24 27 / 0.12), 0 2px 6px rgb(24 24 27 / 0.06);
+  --overlay: rgb(9 9 11 / 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --tailor-accent: #4f46e5;
+    --tailor-accent-hover: #6366f1;
+    --tailor-accent-text: #a5b4fc;
+    --bg: #09090b;
+    --surface: #131316;
+    --surface-muted: #1c1c20;
+    --border: #27272a;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-muted: #a1a1aa;
+    --text-subtle: #8b8b94;
+    --accent-soft: rgb(99 102 241 / 0.14);
+    --success: #4ade80;
+    --success-soft: rgb(34 197 94 / 0.12);
+    --warning: #fbbf24;
+    --warning-soft: rgb(245 158 11 / 0.12);
+    --danger: #f87171;
+    --danger-soft: rgb(239 68 68 / 0.12);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
+    --overlay: rgb(0 0 0 / 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --tailor-accent: #4f46e5;
+  --tailor-accent-hover: #6366f1;
+  --tailor-accent-text: #a5b4fc;
+  --bg: #09090b;
+  --surface: #131316;
+  --surface-muted: #1c1c20;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-subtle: #8b8b94;
+  --accent-soft: rgb(99 102 241 / 0.14);
+  --success: #4ade80;
+  --success-soft: rgb(34 197 94 / 0.12);
+  --warning: #fbbf24;
+  --warning-soft: rgb(245 158 11 / 0.12);
+  --danger: #f87171;
+  --danger-soft: rgb(239 68 68 / 0.12);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
+  --overlay: rgb(0 0 0 / 0.6);
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Type scale: 12 / 14 / 16 / 20 / 24 / 32 / 48 — nothing else. */
+  --text-*: initial;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 21px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 20px;
+  --text-lg--line-height: 28px;
+  --text-xl: 24px;
+  --text-xl--line-height: 32px;
+  --text-2xl: 32px;
+  --text-2xl--line-height: 40px;
+  --text-3xl: 48px;
+  --text-3xl--line-height: 56px;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-overlay: var(--overlay);
+
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --shadow-card: var(--shadow-card);
+  --shadow-overlay: var(--shadow-overlay);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  body {
+    background: var(--bg);
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px));
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
