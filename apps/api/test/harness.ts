@@ -6,6 +6,8 @@ import { MemoryHitCounter } from '../src/lib/hits.js';
 import { createLogger } from '../src/lib/logger.js';
 import type { GoogleVerifier } from '../src/routes/auth.routes.js';
 import type { Mail, Mailer } from '../src/services/mailer.js';
+import { MemoryQueue } from '../src/services/queue.js';
+import { MemoryStorage } from '../src/services/storage.js';
 
 export function testEnv(over: Record<string, string> = {}) {
   return loadEnv({
@@ -38,6 +40,8 @@ export function makeApp(
   const env = testEnv(opts.env);
   const outbox: Mail[] = [];
   const mailer: Mailer = { send: async (m) => void outbox.push(m) };
+  const storage = new MemoryStorage();
+  const queue = new MemoryQueue();
   const app = createApp({
     env,
     prisma: db(),
@@ -45,12 +49,14 @@ export function makeApp(
     mailer,
     logger: createLogger(env),
     google: opts.google ?? null,
+    storage,
+    queue,
   });
   const lastCode = (to: string) => {
     const mail = [...outbox].reverse().find((m) => m.to === to);
     return /\b(\d{6})\b/.exec(mail?.text ?? '')?.[1] ?? null;
   };
-  return { app, req: supertest(app), outbox, lastCode, env };
+  return { app, req: supertest(app), outbox, lastCode, env, storage, queue };
 }
 
 export function refreshCookie(res: { headers: Record<string, unknown> }): string | null {

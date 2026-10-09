@@ -12,6 +12,12 @@ import { requireAuth } from './middleware/auth.js';
 import { rateLimit } from './middleware/rate-limit.js';
 import { authRoutes, type GoogleVerifier } from './routes/auth.routes.js';
 import { meRoutes } from './routes/me.routes.js';
+import { filesRoutes, vaultRoutes } from './routes/vault.routes.js';
+import { createFilesService } from './services/files.service.js';
+import { createImportsService } from './services/imports.service.js';
+import type { JobQueue } from './services/queue.js';
+import type { Storage } from './services/storage.js';
+import { createVaultService } from './services/vault.service.js';
 import { createAuthService } from './services/auth.service.js';
 import type { Mailer } from './services/mailer.js';
 import { createMeService } from './services/me.service.js';
@@ -25,6 +31,8 @@ export interface AppDeps {
   mailer: Mailer;
   logger: Logger;
   google: GoogleVerifier | null;
+  storage: Storage | null;
+  queue: JobQueue;
   /** Readiness probes for /health/ready. */
   checks?: Record<string, () => Promise<unknown>>;
 }
@@ -35,6 +43,9 @@ export function createApp(deps: AppDeps) {
   const auth = createAuthService({ prisma, env, mailer, signer, hits });
   const me = createMeService(prisma);
   const plans = createPlansService(prisma);
+  const files = createFilesService({ prisma, env, storage: deps.storage });
+  const imports = createImportsService({ prisma, files, queue: deps.queue });
+  const vault = createVaultService({ prisma, queue: deps.queue });
 
   const app = express();
   app.disable('x-powered-by');
@@ -95,6 +106,8 @@ export function createApp(deps: AppDeps) {
     }),
   ];
   v1.use('/me', ...authed, meRoutes(me));
+  v1.use('/files', ...authed, filesRoutes(files));
+  v1.use('/vault', ...authed, vaultRoutes({ env, hits, imports, vault }));
 
   app.use('/api/v1', v1);
   app.use(notFound);
