@@ -50,7 +50,7 @@ export function Chip({
         <button
           type="button"
           onClick={onRemove}
-          className="-mr-1 rounded-full p-0.5 hover:bg-black/5 dark:hover:bg-white/10"
+          className="-mr-1 rounded-full p-0.5 hover:bg-text/10"
           aria-label={`Remove ${typeof children === 'string' ? children : 'item'}`}
         >
           <Minus aria-hidden />

@@ -62,18 +62,7 @@ export function ScoreRing({
             stroke="var(--border)"
             strokeWidth={stroke}
           />
-          {before !== undefined && delta !== null && delta > 0 ? (
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={r}
-              fill="none"
-              stroke="var(--border-strong)"
-              strokeWidth={stroke}
-              strokeDasharray={`${(clamp(before) / 100) * c} ${c}`}
-              strokeLinecap="round"
-            />
-          ) : null}
+          {/* Ring drawn first; the "before" tick sits on top of it below. */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -85,6 +74,18 @@ export function ScoreRing({
             strokeLinecap="round"
             className="transition-[stroke-dasharray] duration-200 ease-out"
           />
+          {before !== undefined && delta !== 0 ? (
+            // Tick marking the previous score, so the change is visible on the ring itself.
+            <line
+              x1={size / 2 + (r - stroke * 0.6) * Math.cos((clamp(before) / 100) * 2 * Math.PI)}
+              y1={size / 2 + (r - stroke * 0.6) * Math.sin((clamp(before) / 100) * 2 * Math.PI)}
+              x2={size / 2 + (r + stroke * 0.6) * Math.cos((clamp(before) / 100) * 2 * Math.PI)}
+              y2={size / 2 + (r + stroke * 0.6) * Math.sin((clamp(before) / 100) * 2 * Math.PI)}
+              stroke="var(--text)"
+              strokeWidth={2}
+              strokeLinecap="round"
+            />
+          ) : null}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden>
           <span
