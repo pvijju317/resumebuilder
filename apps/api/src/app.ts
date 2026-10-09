@@ -16,7 +16,7 @@ import { filesRoutes, vaultRoutes } from './routes/vault.routes.js';
 import { createFilesService } from './services/files.service.js';
 import { createImportsService } from './services/imports.service.js';
 import type { JobQueue } from './services/queue.js';
-import { DiskStorage, type Storage } from './services/storage.js';
+import { SignedUploadStorage, type Storage } from './services/storage.js';
 import { AppError } from '@tailor/shared';
 import { createVaultService } from './services/vault.service.js';
 import { anonRoutes, configRoute, jobsRoutes } from './routes/jobs.routes.js';
@@ -104,8 +104,8 @@ export function createApp(deps: AppDeps) {
     res.status(ok ? 200 : 503).json({ ok, checks: results });
   });
   v1.use('/auth', authRoutes({ env, auth, hits, google }));
-  // Dev-only disk storage: the signed token authorizes the upload (same flow as presigned R2/S3).
-  if (deps.storage instanceof DiskStorage) {
+  // Disk/DB storage: the signed token authorizes the upload (same flow as presigned R2/S3).
+  if (deps.storage instanceof SignedUploadStorage) {
     const disk = deps.storage;
     v1.put(
       '/files/upload/:token',
@@ -120,7 +120,7 @@ export function createApp(deps: AppDeps) {
         ) {
           throw new AppError('VALIDATION', 'Upload does not match the requested file.', 400);
         }
-        await disk.write(p.key, body);
+        await disk.write(p.key, body, p.mime);
         res.status(200).end();
       },
     );
@@ -147,6 +147,18 @@ export function createApp(deps: AppDeps) {
   v1.use('/jobs', ...authed, jobsRoutes({ env, hits, jobs }));
   v1.use('/anon', anonRoutes({ env, hits, anon, human: deps.human }));
   v1.use('/config', configRoute(env));
+  // Scheduled housekeeping for serverless hosts (Vercel Cron sends CRON_SECRET as a Bearer token).
+  v1.get('/internal/cron', async (req, res) => {
+    if (!env.CRON_SECRET || req.get('authorization') !== `Bearer ${env.CRON_SECRET}`) {
+      throw new AppError('NOT_FOUND', 'Not found', 404);
+    }
+    const sessions = await anon.cleanupExpired();
+    const uploads =
+      deps.storage instanceof SignedUploadStorage
+        ? await deps.storage.sweep(env.FILE_RETENTION_HOURS * 3_600_000)
+        : 0;
+    res.json({ sessions, uploads });
+  });
 
   app.use('/api/v1', v1);
   app.locals['anon'] = anon;

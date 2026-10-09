@@ -11,6 +11,7 @@ import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, resolve as resolvePath } from 'node:path';
 import { AppError } from '@tailor/shared';
 import type { ServerEnv } from '@tailor/shared/env';
+import type { PrismaClient } from '@tailor/db';
 
 /** Private object storage for uploads. S3 API, so R2/S3/S3Mock are interchangeable via env. */
 export interface Storage {
@@ -90,21 +91,11 @@ export class MemoryStorage implements Storage {
 }
 
 /**
- * Local temp storage for development. Uploads go to PUT /api/v1/files/upload/:token, where the
- * token is an HMAC over (key, mime, size, expiry), so the browser flow matches presigned S3/R2.
- * Files older than the retention window are deleted by `sweep`.
+ * Storage that receives uploads through our own API: PUT /api/v1/files/upload/:token, where the
+ * token is an HMAC over (key, mime, size, expiry). Same browser flow as a presigned S3/R2 URL.
  */
-export class DiskStorage implements Storage {
-  constructor(
-    private readonly dir: string,
-    private readonly secret: string,
-  ) {}
-
-  private path(key: string) {
-    if (key.includes('..') || key.startsWith('/'))
-      throw new AppError('BAD_REQUEST', 'Invalid key', 400);
-    return resolvePath(this.dir, key);
-  }
+export abstract class SignedUploadStorage implements Storage {
+  constructor(private readonly secret: string) {}
 
   sign(payload: { key: string; mime: string; size: number; exp: number }): string {
     const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -140,6 +131,29 @@ export class DiskStorage implements Storage {
     return { url: `/api/v1/files/upload/${token}`, headers: { 'content-type': mime } };
   }
 
+  abstract write(key: string, body: Uint8Array, mime: string): Promise<void>;
+  abstract head(key: string): Promise<{ size: number; contentType: string | null } | null>;
+  abstract get(key: string): Promise<Uint8Array>;
+  abstract delete(key: string): Promise<void>;
+  /** Delete objects older than `maxAgeMs`; returns the number removed. */
+  abstract sweep(maxAgeMs: number, now?: number): Promise<number>;
+}
+
+/** Local temp folder for development. */
+export class DiskStorage extends SignedUploadStorage {
+  constructor(
+    private readonly dir: string,
+    secret: string,
+  ) {
+    super(secret);
+  }
+
+  private path(key: string) {
+    if (key.includes('..') || key.startsWith('/'))
+      throw new AppError('BAD_REQUEST', 'Invalid key', 400);
+    return resolvePath(this.dir, key);
+  }
+
   async write(key: string, body: Uint8Array) {
     const file = this.path(key);
     await mkdir(dirname(file), { recursive: true });
@@ -163,7 +177,6 @@ export class DiskStorage implements Storage {
     await rm(this.path(key), { force: true });
   }
 
-  /** Delete files older than `maxAgeMs`; returns the number removed. */
   async sweep(maxAgeMs: number, now = Date.now()): Promise<number> {
     let removed = 0;
     const walk = async (dir: string): Promise<void> => {
@@ -187,8 +200,56 @@ export class DiskStorage implements Storage {
   }
 }
 
-export function createStorage(env: ServerEnv): Storage | null {
+/** Upload bytes kept in Postgres (serverless trial without object storage). */
+export class DbStorage extends SignedUploadStorage {
+  constructor(
+    private readonly prisma: PrismaClient,
+    secret: string,
+  ) {
+    super(secret);
+  }
+
+  async write(key: string, body: Uint8Array, mime: string) {
+    const data = new Uint8Array(body);
+    await this.prisma.storedObject.upsert({
+      where: { key },
+      create: { key, mime, size: data.byteLength, body: data },
+      update: { mime, size: data.byteLength, body: data, createdAt: new Date() },
+    });
+  }
+
+  async head(key: string) {
+    const o = await this.prisma.storedObject.findUnique({
+      where: { key },
+      select: { size: true, mime: true },
+    });
+    return o ? { size: o.size, contentType: o.mime } : null;
+  }
+
+  async get(key: string) {
+    const o = await this.prisma.storedObject.findUnique({ where: { key }, select: { body: true } });
+    if (!o) throw new AppError('NOT_FOUND', 'File not found', 404);
+    return new Uint8Array(o.body);
+  }
+
+  async delete(key: string) {
+    await this.prisma.storedObject.deleteMany({ where: { key } });
+  }
+
+  async sweep(maxAgeMs: number, now = Date.now()) {
+    const r = await this.prisma.storedObject.deleteMany({
+      where: { createdAt: { lt: new Date(now - maxAgeMs) } },
+    });
+    return r.count;
+  }
+}
+
+export function createStorage(env: ServerEnv, prisma?: PrismaClient): Storage | null {
   if (env.STORAGE_DRIVER === 's3') return createS3Storage(env);
+  if (env.STORAGE_DRIVER === 'db') {
+    if (!prisma) throw new Error('STORAGE_DRIVER=db needs a database client');
+    return new DbStorage(prisma, env.JWT_SECRET);
+  }
   if (env.NODE_ENV === 'production') throw new Error('STORAGE_DRIVER=disk is for development only');
   // Relative paths are anchored at the repo root, not the process cwd.
   const dir = isAbsolute(env.STORAGE_DISK_DIR)
