@@ -16,3 +16,4 @@ apps/extension/dist/
 packages/db/generated/
 .local/
 .local-storage/
+.vercel/

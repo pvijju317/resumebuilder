@@ -12,6 +12,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/generated/**',
       '**/.turbo/**',
+      '.vercel/**',
+      '.local-storage/**',
       'evals/runs/**',
       'playwright-report/**',
       'test-results/**',
