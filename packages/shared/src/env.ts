@@ -47,6 +47,8 @@ export const AiEnv = z.object({
   AI_FALLBACK_MODEL_PREMIUM: optional,
   AI_TASK_OVERRIDES: json(z.record(z.string(), z.string())),
   AI_RPM_LIMIT: z.coerce.number().int().positive().default(35),
+  /** Token-bucket capacity. Worst case per 60 s window = RPM + burst, so keep it small. */
+  AI_RPM_BURST: z.coerce.number().int().positive().default(3),
   AI_TIMEOUT_MS: z.coerce.number().int().positive().default(45_000),
   AI_DEBUG_LOG: bool,
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
