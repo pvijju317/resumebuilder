@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
@@ -8,8 +9,10 @@ import {
   Skeleton,
   StrengthMeter,
 } from '@tailor/ui';
-import { Briefcase, FileCheck2, KanbanSquare, Upload } from 'lucide-react';
+import { ArrowRight, Briefcase, Check, FileCheck2, KanbanSquare, Upload } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useMe } from '../lib/auth.js';
+import { useVault } from '../vault/hooks.js';
 
 const STEPS = [
   {
@@ -36,6 +39,8 @@ const STEPS = [
 
 export function DashboardPage() {
   const me = useMe();
+  const vault = useVault();
+  const hasVault = !!vault.data;
   const firstName = me.data?.name?.split(' ')[0];
   return (
     <div className="flex flex-col gap-8">
@@ -66,17 +71,21 @@ export function DashboardPage() {
                 key={s.title}
                 className={cn(
                   'flex items-start gap-4 rounded-[var(--radius-control)] p-4',
-                  i === 0 ? 'bg-surface shadow-card' : '',
+                  i === 0 || (hasVault && i === 1) ? 'bg-surface shadow-card' : '',
                 )}
               >
                 <span
                   className={cn(
                     'flex size-9 shrink-0 items-center justify-center rounded-full [&_svg]:size-4 [&_svg]:stroke-[1.5]',
-                    i === 0 ? 'bg-accent text-accent-fg' : 'bg-surface text-muted',
+                    i === 0 && hasVault
+                      ? 'bg-success-soft text-success'
+                      : i === 0
+                        ? 'bg-accent text-accent-fg'
+                        : 'bg-surface text-muted',
                   )}
                   aria-hidden
                 >
-                  <s.icon />
+                  {i === 0 && hasVault ? <Check /> : <s.icon />}
                 </span>
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <p className="text-sm font-medium text-text">
@@ -86,10 +95,21 @@ export function DashboardPage() {
                   <p className="text-sm text-muted">{s.body}</p>
                 </div>
                 {i === 0 ? (
+                  <Button
+                    asChild
+                    size="sm"
+                    variant={hasVault ? 'secondary' : 'primary'}
+                    className="ml-auto shrink-0 self-center"
+                  >
+                    <Link to="/app/vault">
+                      {hasVault ? 'Open vault' : 'Start'} <ArrowRight />
+                    </Link>
+                  </Button>
+                ) : (
                   <span className="ml-auto shrink-0 self-center rounded-full border border-border px-2.5 py-1 text-xs text-muted">
                     Opens next release
                   </span>
-                ) : null}
+                )}
               </li>
             ))}
           </ol>
@@ -101,7 +121,7 @@ export function DashboardPage() {
             <CardDescription>Strength rises as you add confirmed metrics.</CardDescription>
           </CardHeader>
           <CardContent>
-            <StrengthMeter value={0} />
+            <StrengthMeter value={vault.data?.strength ?? 0} />
           </CardContent>
         </Card>
       </div>

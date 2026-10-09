@@ -9,6 +9,9 @@ import { LoginPage } from './pages/login.js';
 import { NotFoundPage } from './pages/not-found.js';
 import { SectionPage } from './pages/section.js';
 import { StyleguidePage } from './pages/styleguide.js';
+import { StrengthenPage } from './vault/strengthen.js';
+import { WelcomePage } from './pages/welcome.js';
+import { VaultPage } from './vault/vault-page.js';
 
 export function App() {
   return (
@@ -27,15 +30,9 @@ export function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route
-          path="vault"
-          element={
-            <SectionPage
-              title="Career Vault"
-              description="Upload a resume to build your verified career record."
-            />
-          }
-        />
+        <Route path="welcome" element={<WelcomePage />} />
+        <Route path="vault" element={<VaultPage />} />
+        <Route path="vault/strengthen" element={<StrengthenPage />} />
         <Route
           path="jobs"
           element={

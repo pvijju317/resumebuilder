@@ -27,7 +27,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth, useMe } from '../lib/auth.js';
 import { Wordmark } from './wordmark.js';
 
@@ -122,6 +122,10 @@ function ProfileMenu() {
 export function AppShell() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const me = useMe();
+  // New accounts see the short onboarding once (Skip also marks it done).
+  if (me.data && !me.data.onboardedAt && pathname !== '/app/welcome')
+    return <Navigate to="/app/welcome" replace />;
   const title =
     NAV.find((n) => (n.to === '/app' ? pathname === '/app' : pathname.startsWith(n.to)))?.label ??
     '';
