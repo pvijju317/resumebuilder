@@ -15,6 +15,7 @@ import { meRoutes } from './routes/me.routes.js';
 import { createAuthService } from './services/auth.service.js';
 import type { Mailer } from './services/mailer.js';
 import { createMeService } from './services/me.service.js';
+import { createPlansService } from './services/plans.service.js';
 import { createTokenSigner } from './services/tokens.js';
 
 export interface AppDeps {
@@ -33,6 +34,7 @@ export function createApp(deps: AppDeps) {
   const signer = createTokenSigner(env);
   const auth = createAuthService({ prisma, env, mailer, signer, hits });
   const me = createMeService(prisma);
+  const plans = createPlansService(prisma);
 
   const app = express();
   app.disable('x-powered-by');
@@ -76,6 +78,10 @@ export function createApp(deps: AppDeps) {
     res.status(ok ? 200 : 503).json({ ok, checks: results });
   });
   v1.use('/auth', authRoutes({ env, auth, hits, google }));
+  v1.get('/plans', async (_req, res) => {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(await plans.listPublic());
+  });
 
   // Guard each authenticated resource explicitly so unknown paths still 404.
   const authed = [

@@ -17,3 +17,16 @@ export const PlanFeatures = z.object({
   validityDays: z.number().int().positive().nullish(),
 });
 export type PlanFeatures = z.infer<typeof PlanFeatures>;
+
+/** GET /plans — public plan catalogue (prices in paise). */
+export const PublicPlan = z.object({
+  id: z.string(),
+  name: z.string(),
+  priceInr: z.number().int(),
+  interval: z.enum(['month', 'year', 'one_time']),
+  credits: z.number().int(),
+  premiumCredits: z.number().int(),
+  downloadsPerMonth: z.number().int().nullable(),
+  features: PlanFeatures,
+});
+export type PublicPlan = z.infer<typeof PublicPlan>;
