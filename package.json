@@ -15,11 +15,11 @@
     "typecheck": "turbo run typecheck && tsc -p e2e/tsconfig.json",
     "test": "turbo run test",
     "test:e2e": "playwright test",
-    "db:migrate": "pnpm --filter @tailor/db migrate",
-    "db:deploy": "pnpm --filter @tailor/db deploy",
-    "db:seed": "pnpm --filter @tailor/db seed",
-    "db:generate": "pnpm --filter @tailor/db generate",
-    "eval": "pnpm --filter @tailor/ai --silent eval"
+    "db:migrate": "pnpm --filter @tailor/db run migrate",
+    "db:deploy": "pnpm --filter @tailor/db run migrate:deploy",
+    "db:seed": "pnpm --filter @tailor/db run seed",
+    "db:generate": "pnpm --filter @tailor/db run generate",
+    "eval": "pnpm --filter @tailor/ai --silent run eval"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
