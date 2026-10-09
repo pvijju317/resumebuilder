@@ -171,7 +171,7 @@ export default function handler(req, res) {
   if (mod) return mod.default(req, res);
   res.statusCode = 503;
   res.setHeader('content-type', 'application/json');
-  res.end(JSON.stringify({ error: { code: 'BOOT_FAILED', message: String(loadError && loadError.message || loadError).slice(0, 300) } }));
+  res.end(JSON.stringify({ error: { code: 'BOOT_FAILED', message: (process.version + ': ' + String(loadError && loadError.message || loadError)).slice(0, 300) } }));
 }
 `,
 );
@@ -180,7 +180,8 @@ writeFileSync(
   join(FUNC, '.vc-config.json'),
   JSON.stringify(
     {
-      runtime: 'nodejs22.x',
+      // 24.x: Vercel's 22.x image predates require(esm), which jsdom's deps rely on.
+      runtime: 'nodejs24.x',
       handler: 'index.mjs',
       launcherType: 'Nodejs',
       shouldAddHelpers: false,
