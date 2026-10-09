@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
+  // The local OTP log fallback cannot tell parallel sign-ins apart; Mailpit (CI) can.
+  ...(process.env['E2E_OTP_LOG'] ? { workers: 1 } : {}),
   retries: process.env['CI'] ? 1 : 0,
   reporter: process.env['CI'] ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: { baseURL: 'http://localhost:5173', trace: 'retain-on-failure' },
@@ -18,6 +20,8 @@ export default defineConfig({
     {
       command: 'pnpm --filter @tailor/api start',
       url: 'http://localhost:4000/api/v1/health',
+      // The suite signs in many times from one IP; production limits stay in .env.
+      env: { AUTH_RATE_LIMIT_PER_MIN: '200', OTP_REQUESTS_PER_EMAIL_PER_HOUR: '50' },
       reuseExistingServer: true,
       timeout: 60_000,
     },

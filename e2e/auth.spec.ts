@@ -17,7 +17,10 @@ test('email OTP login, session restore and sign out', async ({ page }, info) => 
   await page.getByLabel('Sign-in code').fill(await latestOtp(email));
   await page.getByRole('button', { name: 'Verify and sign in' }).click();
 
-  await expect(page).toHaveURL('/app');
+  // New accounts get the short onboarding first; skipping marks it done.
+  await expect(page).toHaveURL('/app/welcome');
+  await page.getByRole('button', { name: 'Skip for now' }).click();
+  await page.goto('/app');
   await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();
 
   // A full reload restores the session from the httpOnly refresh cookie.

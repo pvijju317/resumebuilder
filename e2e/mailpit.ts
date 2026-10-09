@@ -2,6 +2,17 @@
 const MAILPIT = process.env['MAILPIT_URL'] ?? 'http://localhost:8025';
 
 export async function latestOtp(to: string, timeoutMs = 10_000): Promise<string> {
+  // Local runs without Mailpit: read codes from an API console log (EMAIL_TRANSPORT=log).
+  const logFile = process.env['E2E_OTP_LOG'];
+  if (logFile) {
+    await new Promise((r) => setTimeout(r, 300));
+    const { readFileSync } = await import('node:fs');
+    const code = [...readFileSync(logFile, 'utf8').matchAll(/sign-in code is (\d{6})/g)].at(
+      -1,
+    )?.[1];
+    if (code) return code;
+    throw new Error(`No OTP found in ${logFile}`);
+  }
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const res = await fetch(
