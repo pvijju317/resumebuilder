@@ -1,0 +1,26 @@
+{
+  "name": "@tailor/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "deploy": "prisma migrate deploy",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "@tailor/core": "workspace:*",
+    "@tailor/shared": "workspace:*",
+    "dotenv": "18.0.6"
+  },
+  "devDependencies": {
+    "prisma": "7.10.0"
+  }
+}

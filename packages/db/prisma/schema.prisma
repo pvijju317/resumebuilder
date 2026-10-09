@@ -1,0 +1,463 @@
+// Tailor data model — TRD §4 plus auth tables (OtpCode, RefreshToken) and SkillAlias.
+// Money: all *Inr fields store integer PAISE (field names kept from TRD by decision, 2026-10-09).
+// Dates: vault dates are strings `YYYY-MM`; everything else is timestamptz UTC.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Region {
+  IN
+  US
+  UK
+  EU
+}
+
+enum AppStatus {
+  SAVED
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+  GHOSTED
+}
+
+// ---------- Users & auth ----------
+
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  name                  String?
+  googleId              String?   @unique
+  role                  Role      @default(USER)
+  regionDefault         Region    @default(IN)
+  targetRoles           String[]  @default([])
+  experienceLevel       String? // fresher|early|mid|senior|executive
+  modelImprovementOptIn Boolean   @default(false)
+  consentAt             DateTime?
+  onboardedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  vault         Vault?
+  subscription  Subscription?
+  creditLedger  CreditLedger[]
+  jobs          Job[]
+  optimizations Optimization[]
+  applications  Application[]
+  payments      Payment[]
+  refreshTokens RefreshToken[]
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+}
+
+/// Rotating refresh tokens. A reused (already rotated) token revokes the whole family.
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  familyId     String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+// ---------- Career Vault ----------
+
+model Vault {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  profile   Json // VaultProfile (Zod)
+  strength  Int      @default(0) // 0-100
+  extras    Json? // VaultExtras (Zod): languages, awards, publications, volunteering
+  updatedAt DateTime @updatedAt
+
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles     VaultRole[]
+  projects  VaultProject[]
+  education VaultEducation[]
+  certs     VaultCertification[]
+  skills    VaultSkill[]
+}
+
+model VaultRole {
+  id        String  @id @default(cuid())
+  vaultId   String
+  company   String
+  title     String
+  location  String?
+  startDate String // YYYY-MM
+  endDate   String? // null = present
+  type      String? // full-time, intern, contract
+  teamSize  Int?
+  scope     String?
+  hidden    Boolean @default(false)
+  confirmed Boolean @default(false)
+  order     Int
+
+  vault        Vault              @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  achievements VaultAchievement[]
+
+  @@index([vaultId, order])
+}
+
+model VaultProject {
+  id        String  @id @default(cuid())
+  vaultId   String
+  name      String
+  role      String?
+  url       String?
+  startDate String?
+  endDate   String?
+  summary   String?
+  skills    String[] @default([])
+  hidden    Boolean @default(false)
+  confirmed Boolean @default(false)
+  order     Int
+
+  vault        Vault              @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  achievements VaultAchievement[]
+
+  @@index([vaultId, order])
+}
+
+model VaultAchievement {
+  id         String   @id @default(cuid())
+  roleId     String?
+  projectId  String?
+  text       String // user-confirmed canonical phrasing
+  metrics    Json // Metric[]
+  skills     String[] // normalized skill keys
+  impactType String[] // revenue|cost|time|quality|scale|leadership|other
+  variants   Json? // {technical?, leadership?, business?}
+  confirmed  Boolean  @default(false)
+  hidden     Boolean  @default(false)
+  source     String // parse|gap_answer|editor|manual
+  order      Int
+
+  role    VaultRole?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  project VaultProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([roleId, order])
+  @@index([projectId, order])
+}
+
+model VaultEducation {
+  id          String  @id @default(cuid())
+  vaultId     String
+  institution String
+  degree      String?
+  field       String?
+  startDate   String?
+  endDate     String?
+  grade       String?
+  hidden      Boolean @default(false)
+  confirmed   Boolean @default(false)
+  order       Int
+
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+
+  @@index([vaultId, order])
+}
+
+model VaultCertification {
+  id        String  @id @default(cuid())
+  vaultId   String
+  name      String
+  issuer    String?
+  date      String?
+  url       String?
+  hidden    Boolean @default(false)
+  confirmed Boolean @default(false)
+  order     Int
+
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+
+  @@index([vaultId, order])
+}
+
+model VaultSkill {
+  id          String  @id @default(cuid())
+  vaultId     String
+  name        String
+  key         String // normalized skill key (alias-resolved)
+  category    String?
+  proficiency String?
+  years       Float?
+  hidden      Boolean @default(false)
+  order       Int
+
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+
+  @@unique([vaultId, key])
+  @@index([vaultId, order])
+}
+
+/// Alias map for skill normalization (js -> javascript). Seeded from packages/core data.
+model SkillAlias {
+  id        String @id @default(cuid())
+  alias     String @unique
+  canonical String
+
+  @@index([canonical])
+}
+
+// ---------- Jobs & optimizations ----------
+
+model JdCache {
+  id        String   @id @default(cuid())
+  urlNorm   String?  @unique
+  hash      String   @unique // sha256 of normalized JD text
+  raw       String
+  extracted Json // JobExtraction (Zod)
+  model     String
+  createdAt DateTime @default(now())
+
+  jobs Job[]
+}
+
+model Job {
+  id        String   @id @default(cuid())
+  userId    String
+  jdCacheId String
+  overrides Json? // user-edited must/nice skills
+  source    String // paste|url|extension
+  sourceUrl String?
+  createdAt DateTime @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jdCache       JdCache        @relation(fields: [jdCacheId], references: [id])
+  optimizations Optimization[]
+  applications  Application[]
+
+  @@index([userId, createdAt])
+}
+
+model Optimization {
+  id          String   @id @default(cuid())
+  userId      String
+  jobId       String
+  region      Region
+  template    String
+  pageTarget  Int
+  tone        String
+  tier        String // standard|premium
+  status      String // queued|running|done|failed
+  selectedIds String[] @default([])
+  resume      Json? // ResumeDoc (Zod) — AI original after Fact Guard
+  scoreBefore Json?
+  scoreAfter  Json?
+  flags       Json? // fact guard violations, ASK placeholders
+  model       String?
+  creditsUsed Int      @default(0)
+  regenUsed   Int      @default(0)
+  refineUsed  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job         Job             @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  versions    ResumeVersion[]
+  coverLetter CoverLetter?
+
+  @@index([userId, createdAt])
+}
+
+model ResumeVersion {
+  id             String   @id @default(cuid())
+  optimizationId String
+  doc            Json
+  label          String?
+  createdAt      DateTime @default(now())
+
+  optimization Optimization  @relation(fields: [optimizationId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@index([optimizationId, createdAt])
+}
+
+model CoverLetter {
+  id             String   @id @default(cuid())
+  optimizationId String   @unique
+  body           String
+  tone           String
+  updatedAt      DateTime @updatedAt
+
+  optimization Optimization @relation(fields: [optimizationId], references: [id], onDelete: Cascade)
+}
+
+// ---------- Tracker ----------
+
+model Application {
+  id              String    @id @default(cuid())
+  userId          String
+  jobId           String
+  resumeVersionId String?
+  coverLetterId   String?
+  status          AppStatus @default(SAVED)
+  appliedAt       DateTime?
+  statusHistory   Json // [{status, at}]
+  source          String // manual|extension
+  followUpAt      DateTime?
+  notes           String?
+  contact         Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job           Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  resumeVersion ResumeVersion? @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+}
+
+// ---------- Plans & billing ----------
+
+model Plan {
+  id                String  @id // e.g. free, starter, pro_monthly, pro_yearly
+  name              String
+  priceInr          Int // PAISE
+  interval          String // none|one_time|month|year
+  credits           Int
+  premiumCredits    Int
+  downloadsPerMonth Int? // null = unlimited
+  features          Json // PlanFeatures (Zod)
+  razorpayPlanId    String?
+  active            Boolean @default(true)
+  sortOrder         Int     @default(0)
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  planId        String
+  status        String // active|cancelled|past_due|expired
+  periodStart   DateTime
+  periodEnd     DateTime
+  razorpaySubId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+}
+
+/// Balance is derived (sum of delta per period), never a mutable counter.
+model CreditLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  delta     Int
+  kind      String // grant|use|refund|expire
+  pool      String   @default("standard") // standard|premium
+  reason    String
+  refId     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Payment {
+  id         String   @id @default(cuid())
+  userId     String
+  amountInr  Int // PAISE
+  gstInr     Int // PAISE
+  razorpayId String   @unique
+  status     String
+  invoiceUrl String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------- Anonymous flow ----------
+
+model AnonSession {
+  id             String   @id @default(cuid())
+  ipHash         String
+  fpHash         String?
+  resumeText     String
+  jobId          String?
+  optimizationId String?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+
+  @@index([expiresAt])
+  @@index([ipHash, createdAt])
+}
+
+// ---------- AI & extension ----------
+
+model AiCallLog {
+  id            String   @id @default(cuid())
+  task          String
+  promptVersion String
+  provider      String
+  model         String
+  inputTokens   Int
+  outputTokens  Int
+  latencyMs     Int
+  status        String // ok|retry|fail|fallback
+  errorCode     String?
+  costEstUsd    Decimal  @db.Decimal(10, 6)
+  userId        String?
+  refId         String?
+  createdAt     DateTime @default(now())
+
+  @@index([task, createdAt])
+  @@index([createdAt])
+}
+
+/// Per-model pricing for AiCallLog cost estimates (USD per 1M tokens). Admin-editable.
+model AiModelPrice {
+  id              String   @id @default(cuid())
+  provider        String
+  model           String
+  inputPerMUsd    Decimal  @db.Decimal(10, 4)
+  outputPerMUsd   Decimal  @db.Decimal(10, 4)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, model])
+}
+
+model ExtensionSelectorConfig {
+  id        String   @id @default(cuid())
+  site      String
+  version   Int
+  config    Json
+  active    Boolean
+  updatedAt DateTime @updatedAt
+
+  @@unique([site, version])
+}
