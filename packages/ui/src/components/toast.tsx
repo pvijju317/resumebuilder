@@ -61,7 +61,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         ))}
         <ToastPrimitive.Viewport
           className={cn(
-            'fixed right-0 bottom-0 z-[60] flex w-full max-w-sm flex-col gap-2 p-4 outline-none',
+            // Top right, under the top bar: never covers sticky page actions at the bottom.
+            'fixed top-14 right-0 z-[60] flex w-full max-w-sm flex-col gap-2 p-4 outline-none',
           )}
         />
       </ToastPrimitive.Provider>

@@ -163,18 +163,16 @@ export function answerToMetrics(
     if (n.kind === 'percent') unit = '%';
     else if (n.kind.startsWith('currency:')) unit = n.kind.slice('currency:'.length);
     else {
-      const after = text.slice(text.indexOf(n.raw) + n.raw.length);
+      // The phrase after the number, up to punctuation, minus leading/trailing filler words:
+      // "120 store and category managers, roughly" -> "store and category managers".
+      const after = text.slice(text.indexOf(n.raw) + n.raw.length).split(/[,.;:()!?]/)[0] ?? '';
       const words = after
         .split(/[^\p{L}-]+/u)
         .filter(Boolean)
-        .slice(0, 3);
-      const firstContent = words.findIndex((w) => !UNIT_STOPWORDS.has(w.toLowerCase()));
-      const picked =
-        firstContent === -1
-          ? []
-          : words
-              .slice(firstContent, firstContent + 2)
-              .filter((w) => !UNIT_STOPWORDS.has(w.toLowerCase()));
+        .slice(0, 5);
+      while (words.length && UNIT_STOPWORDS.has(words[0]!.toLowerCase())) words.shift();
+      while (words.length && UNIT_STOPWORDS.has(words.at(-1)!.toLowerCase())) words.pop();
+      const picked = words;
       unit = picked.join(' ').toLowerCase() || opts.expectedUnit?.trim() || '';
     }
     return { value: n.value, unit: unit.slice(0, 32), context: opts.context.slice(0, 200) };

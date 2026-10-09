@@ -134,6 +134,7 @@ describe('answerToMetrics', () => {
   const ctx = { context: 'How many people used the dashboards?' };
   it.each([
     ['About 120 store managers', 120, 'store managers'],
+    ['About 120 store and category managers, roughly', 120, 'store and category managers'],
     ['roughly 35% less time', 35, '%'],
     ['₹5 Cr in the first year', 50_000_000, 'INR'],
     ['40 of them', 40, 'them'],
