@@ -1,0 +1,17 @@
+{
+  "name": "@tailor/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./data/skill-aliases.json": "./data/skill-aliases.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@tailor/shared": "workspace:*"
+  }
+}
