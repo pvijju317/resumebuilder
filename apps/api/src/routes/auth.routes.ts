@@ -71,7 +71,7 @@ export function authRoutes(deps: {
   };
 
   r.get('/providers', (_req, res) => {
-    res.json({ email: true, google: google !== null });
+    res.json({ email: true, google: google !== null, trialOpen: env.AUTH_MODE === 'trial_open' });
   });
 
   r.post('/otp/request', perIp, async (req, res) => {
@@ -83,6 +83,12 @@ export function authRoutes(deps: {
   r.post('/otp/verify', perIp, async (req, res) => {
     const { email, code } = parseBody(OtpVerifyBody, req.body);
     sendSession(res, await auth.verifyOtp(email, code, req.get('user-agent')));
+  });
+
+  // Trial only (AUTH_MODE=trial_open): email alone, no verification.
+  r.post('/trial', perIp, async (req, res) => {
+    const { email } = parseBody(OtpRequestBody, req.body);
+    sendSession(res, await auth.trialSignIn(email, req.get('user-agent')));
   });
 
   r.post('/refresh', async (req, res) => {

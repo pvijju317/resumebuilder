@@ -49,7 +49,7 @@ export function LoginPage() {
 
   const providers = useQuery({
     queryKey: ['auth-providers'],
-    queryFn: () => api<{ email: boolean; google: boolean }>('/auth/providers'),
+    queryFn: () => api<{ email: boolean; google: boolean; trialOpen: boolean }>('/auth/providers'),
     staleTime: Infinity,
   });
 
@@ -69,6 +69,12 @@ export function LoginPage() {
     setError(null);
     setBusy(true);
     try {
+      if (providers.data?.trialOpen) {
+        // Trial mode: no verification step (AUTH_MODE=trial_open on the server).
+        const tokens = await api<AuthTokens>('/auth/trial', { method: 'POST', body: { email } });
+        signIn(tokens.accessToken);
+        return;
+      }
       await api('/auth/otp/request', { method: 'POST', body: { email } });
       setStep('code');
       setCode('');
@@ -117,7 +123,9 @@ export function LoginPage() {
             </h1>
             <p className="text-sm text-muted">
               {step === 'email' ? (
-                signup ? (
+                providers.data?.trialOpen ? (
+                  'Enter your email to continue.'
+                ) : signup ? (
                   'Free to start. We’ll email you a 6-digit code. No password needed.'
                 ) : (
                   'We’ll email you a 6-digit code. No password needed.'
@@ -147,8 +155,13 @@ export function LoginPage() {
                     />
                   </Field>
                   <Button type="submit" loading={busy} disabled={!email.includes('@')}>
-                    Continue with email
+                    {providers.data?.trialOpen ? 'Continue' : 'Continue with email'}
                   </Button>
+                  {providers.data?.trialOpen ? (
+                    <p className="rounded-[var(--radius-control)] bg-warning-soft px-3 py-2 text-xs text-warning">
+                      Trial version: sign-in is not verified. Use test data only.
+                    </p>
+                  ) : null}
                 </form>
               ) : (
                 <form onSubmit={verify} className="flex flex-col gap-4" noValidate>

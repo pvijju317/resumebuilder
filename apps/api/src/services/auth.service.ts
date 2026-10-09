@@ -129,6 +129,14 @@ export function createAuthService(deps: AuthDeps) {
       return issueSession(user, userAgent);
     },
 
+    /** AUTH_MODE=trial_open only: sign in (or sign up) with an email alone. */
+    async trialSignIn(email: string, userAgent?: string): Promise<IssuedSession> {
+      if (env.AUTH_MODE !== 'trial_open') throw new AppError('NOT_FOUND', 'Not found', 404);
+      const user = await prisma.user.upsert({ where: { email }, create: { email }, update: {} });
+      assertActive(user);
+      return issueSession(user, userAgent);
+    },
+
     /** Rotating refresh: a reused (already-rotated) token revokes its whole family. */
     async refresh(token: string, userAgent?: string): Promise<IssuedSession> {
       const unauthorized = () =>

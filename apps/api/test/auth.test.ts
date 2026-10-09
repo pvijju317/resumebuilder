@@ -240,10 +240,12 @@ describe('Google sign-in', () => {
     expect((await makeApp().req.get('/api/v1/auth/providers')).body).toEqual({
       email: true,
       google: false,
+      trialOpen: false,
     });
     expect((await makeApp({ google }).req.get('/api/v1/auth/providers')).body).toEqual({
       email: true,
       google: true,
+      trialOpen: false,
     });
     await makeApp().req.get('/api/v1/auth/google/start').expect(404);
   });
@@ -295,5 +297,30 @@ describe('platform', () => {
     const r = await h.req.get('/api/v1/nope').expect(404);
     expect(r.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Not found' } });
     expect(r.headers['x-request-id']).toBeTruthy();
+  });
+});
+
+describe('trial sign-in (AUTH_MODE=trial_open)', () => {
+  it('is disabled by default', async () => {
+    const h = makeApp();
+    await h.req.post('/api/v1/auth/trial').send({ email: 'a@example.com' }).expect(404);
+    expect((await h.req.get('/api/v1/auth/providers')).body.trialOpen).toBe(false);
+  });
+
+  it('signs in with an email alone when enabled, without sending mail', async () => {
+    const h = makeApp({ env: { AUTH_MODE: 'trial_open' } });
+    expect((await h.req.get('/api/v1/auth/providers')).body.trialOpen).toBe(true);
+    const r = await h.req
+      .post('/api/v1/auth/trial')
+      .send({ email: ' Tester@Example.com ' })
+      .expect(200);
+    expect(refreshCookie(r)).toBeTruthy();
+    const me = await h.req
+      .get('/api/v1/me')
+      .set('authorization', `Bearer ${r.body.accessToken}`)
+      .expect(200);
+    expect(me.body.email).toBe('tester@example.com');
+    expect(h.outbox).toHaveLength(0);
+    await h.req.post('/api/v1/auth/trial').send({ email: 'nope' }).expect(400);
   });
 });

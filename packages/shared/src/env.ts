@@ -99,6 +99,11 @@ export const ServerEnv = AiEnv.extend({
   REFRESH_TTL_DAYS: z.coerce.number().int().positive().default(30),
   OTP_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   OTP_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  /**
+   * otp: emailed 6-digit codes (normal). trial_open: sign in with an email alone, NO verification.
+   * trial_open lets anyone open any account; only for short closed trials, never real users.
+   */
+  AUTH_MODE: z.enum(['otp', 'trial_open']).default('otp'),
   TURNSTILE_SITE_KEY: optional,
   TURNSTILE_SECRET: optional,
   GOOGLE_CLIENT_ID: optional,
