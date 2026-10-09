@@ -51,9 +51,12 @@ for (const path of ['/', '/login', '/styleguide']) {
     test(`${path} has no WCAG 2.1 AA violations (${scheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme, reducedMotion: 'reduce' });
       await page.goto(path);
-      await page.waitForLoadState('networkidle');
+      // Not 'networkidle': the Turnstile widget on / keeps polling.
+      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+      await page.waitForLoadState('load');
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .exclude('iframe') // third-party Turnstile widget
         .analyze();
       expect(results.violations.map((v) => `${v.id}: ${v.nodes.length} node(s)`)).toEqual([]);
     });
