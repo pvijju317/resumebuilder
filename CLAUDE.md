@@ -52,20 +52,28 @@ Definition of done for every phase: lint, typecheck, unit tests, and relevant e2
 - Vault editor (all entities, reorder, hide), PII tokenization before AI calls.
 **Accept:** 10 varied sample resumes parse into the vault with correct roles/dates; editor CRUD e2e passes.
 
-### Phase 2 — Jobs, ATS score, Optimizer, Editor, Export
+### Phase 2 — Jobs, ATS score, try-first flow, Optimizer, Editor, Export
+*Reordered 2026-10-09 (client request): the anonymous try-first flow moved here from Phase 3. Build in two slices; demo 2a before starting 2b.*
+
+**2a — Score check without signup**
 - Job intake (paste/URL), `jd.extract` with `JdCache`, skill chip overrides.
-- `packages/core`: ATS score (TRD §6.1), vault selection (§6.2), Fact Guard (§6.3), region rules (§6.4) — fully unit tested.
+- `packages/core`: ATS score (TRD §6.1), region rules (§6.4) — fully unit tested.
+- Landing hero "Check my ATS score": resume upload/paste + JD/URL → score, matched/missing keywords, section checks. No account. Turnstile before AI calls, IP/fingerprint limits, 72 h expiry (PRD F1).
+**Accept 2a:** Playwright: landing → ATS score without an account in < 60 s for a 2-page resume.
+
+**2b — Tailor**
+- `packages/core`: vault selection (§6.2), Fact Guard (§6.3, built in Phase 0) wired into the pipeline.
 - Optimizer pipeline in worker with SSE progress; `[[ASK]]` answer flow.
 - Result screen, WYSIWYG editor (TipTap), keyword checklist, regenerate/refine with per-optimization limits, versions, save-to-vault.
 - `packages/render`: 4 templates × 4 regions, PDF (Puppeteer) + DOCX, auto-fit, post-render parse check.
 - Cover letter generate/edit/export.
-**Accept:** end-to-end optimize ≤ 30 s p50 on dev; Fact Guard tests ≥ 95% branch coverage; exported PDFs pass pdfjs text-order check for every template × region.
+- Anonymous "Tailor it" read-only preview (1 free optimization) + claim-on-signup with the session preserved.
+**Accept 2b:** end-to-end optimize ≤ 30 s p50 on dev; Fact Guard tests ≥ 95% branch coverage; exported PDFs pass pdfjs text-order check for every template × region; Playwright: landing → score → anon optimize → signup (session preserved).
 
-### Phase 3 — Anonymous flow, landing, plans & billing
-- Marketing landing (see Design), pricing, FAQ, legal pages placeholders.
-- Anonymous try-first flow with Turnstile, IP/fingerprint limits, 72 h expiry, claim-on-signup.
+### Phase 3 — Plans & billing
+- Landing, pricing section and legal placeholders shipped in Phase 0; replace placeholders with reviewed legal text.
 - Plans from DB, credit ledger, transactional deduction/refund, download gating, Razorpay subscriptions + one-time, webhooks, GST invoices, cancel flow.
-**Accept:** Playwright: landing → score → anon optimize → signup (session preserved) → upgrade in Razorpay test mode → download.
+**Accept:** Playwright: signup → upgrade in Razorpay test mode → download.
 
 ### Phase 4 — Tracker & insights
 - Applications CRUD, kanban + table, status history, follow-up reminders (SES), ghosted suggestion job.
