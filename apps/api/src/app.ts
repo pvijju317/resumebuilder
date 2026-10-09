@@ -16,7 +16,8 @@ import { filesRoutes, vaultRoutes } from './routes/vault.routes.js';
 import { createFilesService } from './services/files.service.js';
 import { createImportsService } from './services/imports.service.js';
 import type { JobQueue } from './services/queue.js';
-import type { Storage } from './services/storage.js';
+import { DiskStorage, type Storage } from './services/storage.js';
+import { AppError } from '@tailor/shared';
 import { createVaultService } from './services/vault.service.js';
 import { createAuthService } from './services/auth.service.js';
 import type { Mailer } from './services/mailer.js';
@@ -89,6 +90,27 @@ export function createApp(deps: AppDeps) {
     res.status(ok ? 200 : 503).json({ ok, checks: results });
   });
   v1.use('/auth', authRoutes({ env, auth, hits, google }));
+  // Dev-only disk storage: the signed token authorizes the upload (same flow as presigned R2/S3).
+  if (deps.storage instanceof DiskStorage) {
+    const disk = deps.storage;
+    v1.put(
+      '/files/upload/:token',
+      express.raw({ type: () => true, limit: env.FILE_MAX_BYTES }),
+      async (req, res) => {
+        const p = disk.verify(req.params['token']!);
+        const body = req.body as Buffer;
+        if (
+          req.get('content-type') !== p.mime ||
+          !Buffer.isBuffer(body) ||
+          body.byteLength !== p.size
+        ) {
+          throw new AppError('VALIDATION', 'Upload does not match the requested file.', 400);
+        }
+        await disk.write(p.key, body);
+        res.status(200).end();
+      },
+    );
+  }
   v1.get('/plans', async (_req, res) => {
     res.set('Cache-Control', 'public, max-age=300');
     res.json(await plans.listPublic());

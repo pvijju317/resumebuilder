@@ -7,7 +7,7 @@ import { createLogger } from './lib/logger.js';
 import { createGoogleVerifier } from './routes/auth.routes.js';
 import { createMailer } from './services/mailer.js';
 import { createBullQueue } from './services/queue.js';
-import { createS3Storage } from './services/storage.js';
+import { createStorage, DiskStorage } from './services/storage.js';
 
 const env = loadEnv();
 const logger = createLogger(env);
@@ -17,9 +17,19 @@ redis.on('error', (err) => logger.error({ err }, 'redis error'));
 // BullMQ needs its own connection with maxRetriesPerRequest: null.
 const queueRedis = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });
 const queue = createBullQueue(queueRedis);
-const storage = createS3Storage(env);
+const storage = createStorage(env);
 if (!storage)
   logger.warn('S3/R2 storage not configured: file uploads disabled, pasted text still works');
+if (storage instanceof DiskStorage) {
+  logger.warn(`dev disk storage in use; uploads are deleted after ${env.FILE_RETENTION_HOURS} h`);
+  const sweep = () =>
+    storage.sweep(env.FILE_RETENTION_HOURS * 3_600_000).then(
+      (n) => n && logger.info(`deleted ${n} expired uploads`),
+      (err) => logger.warn({ err }, 'upload sweep failed'),
+    );
+  void sweep();
+  setInterval(() => void sweep(), 3_600_000).unref();
+}
 
 const app = createApp({
   env,

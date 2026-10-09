@@ -6,6 +6,9 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createHmac, timingSafeEqual } from 'node:crypto';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { dirname, isAbsolute, resolve as resolvePath } from 'node:path';
 import { AppError } from '@tailor/shared';
 import type { ServerEnv } from '@tailor/shared/env';
 
@@ -84,4 +87,112 @@ export class MemoryStorage implements Storage {
   async delete(key: string) {
     this.objects.delete(key);
   }
+}
+
+/**
+ * Local temp storage for development. Uploads go to PUT /api/v1/files/upload/:token, where the
+ * token is an HMAC over (key, mime, size, expiry), so the browser flow matches presigned S3/R2.
+ * Files older than the retention window are deleted by `sweep`.
+ */
+export class DiskStorage implements Storage {
+  constructor(
+    private readonly dir: string,
+    private readonly secret: string,
+  ) {}
+
+  private path(key: string) {
+    if (key.includes('..') || key.startsWith('/'))
+      throw new AppError('BAD_REQUEST', 'Invalid key', 400);
+    return resolvePath(this.dir, key);
+  }
+
+  sign(payload: { key: string; mime: string; size: number; exp: number }): string {
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    return `${body}.${createHmac('sha256', this.secret).update(`upload:${body}`).digest('base64url')}`;
+  }
+
+  verify(token: string): { key: string; mime: string; size: number; exp: number } {
+    const [body, sig] = token.split('.');
+    const expected = body
+      ? createHmac('sha256', this.secret).update(`upload:${body}`).digest('base64url')
+      : '';
+    if (
+      !body ||
+      !sig ||
+      sig.length !== expected.length ||
+      !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
+    ) {
+      throw new AppError('UNAUTHORIZED', 'Upload link is invalid.', 401);
+    }
+    const p = JSON.parse(Buffer.from(body, 'base64url').toString()) as {
+      key: string;
+      mime: string;
+      size: number;
+      exp: number;
+    };
+    if (p.exp < Date.now())
+      throw new AppError('UNAUTHORIZED', 'Upload link has expired. Please try again.', 401);
+    return p;
+  }
+
+  async presignPut(key: string, mime: string, size: number, ttlSeconds: number) {
+    const token = this.sign({ key, mime, size, exp: Date.now() + ttlSeconds * 1000 });
+    return { url: `/api/v1/files/upload/${token}`, headers: { 'content-type': mime } };
+  }
+
+  async write(key: string, body: Uint8Array) {
+    const file = this.path(key);
+    await mkdir(dirname(file), { recursive: true });
+    await writeFile(file, body);
+  }
+
+  async head(key: string) {
+    try {
+      const s = await stat(this.path(key));
+      return { size: s.size, contentType: null };
+    } catch {
+      return null;
+    }
+  }
+
+  async get(key: string) {
+    return new Uint8Array(await readFile(this.path(key)));
+  }
+
+  async delete(key: string) {
+    await rm(this.path(key), { force: true });
+  }
+
+  /** Delete files older than `maxAgeMs`; returns the number removed. */
+  async sweep(maxAgeMs: number, now = Date.now()): Promise<number> {
+    let removed = 0;
+    const walk = async (dir: string): Promise<void> => {
+      let entries;
+      try {
+        entries = await readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const e of entries) {
+        const full = resolvePath(dir, e.name);
+        if (e.isDirectory()) await walk(full);
+        else if (now - (await stat(full)).mtimeMs > maxAgeMs) {
+          await rm(full, { force: true });
+          removed++;
+        }
+      }
+    };
+    await walk(this.dir);
+    return removed;
+  }
+}
+
+export function createStorage(env: ServerEnv): Storage | null {
+  if (env.STORAGE_DRIVER === 's3') return createS3Storage(env);
+  if (env.NODE_ENV === 'production') throw new Error('STORAGE_DRIVER=disk is for development only');
+  // Relative paths are anchored at the repo root, not the process cwd.
+  const dir = isAbsolute(env.STORAGE_DISK_DIR)
+    ? env.STORAGE_DISK_DIR
+    : resolvePath(import.meta.dirname, '../../../..', env.STORAGE_DISK_DIR);
+  return new DiskStorage(dir, env.JWT_SECRET);
 }

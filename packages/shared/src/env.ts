@@ -71,6 +71,11 @@ export const ServerEnv = AiEnv.extend({
   SMTP_PASS: optional,
   SES_FROM: z.string().min(3),
   AWS_REGION: z.string().default('ap-south-1'),
+  /** disk: local temp folder (dev only, files auto-deleted); s3: S3-compatible (Cloudflare R2). */
+  STORAGE_DRIVER: z.enum(['disk', 's3']).default('disk'),
+  STORAGE_DISK_DIR: z.string().default('.local-storage'),
+  /** Raw uploads are deleted after this many hours (only extracted text is kept). */
+  FILE_RETENTION_HOURS: z.coerce.number().int().positive().default(24),
   /** S3-compatible object storage. Cloudflare R2: endpoint https://<account>.r2.cloudflarestorage.com, region auto. */
   S3_ENDPOINT: optional,
   S3_REGION: z.string().default('auto'),

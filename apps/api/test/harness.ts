@@ -7,7 +7,7 @@ import { createLogger } from '../src/lib/logger.js';
 import type { GoogleVerifier } from '../src/routes/auth.routes.js';
 import type { Mail, Mailer } from '../src/services/mailer.js';
 import { MemoryQueue } from '../src/services/queue.js';
-import { MemoryStorage } from '../src/services/storage.js';
+import { MemoryStorage, type Storage } from '../src/services/storage.js';
 
 export function testEnv(over: Record<string, string> = {}) {
   return loadEnv({
@@ -35,12 +35,12 @@ export async function resetDb() {
 }
 
 export function makeApp(
-  opts: { env?: Record<string, string>; google?: GoogleVerifier | null } = {},
+  opts: { env?: Record<string, string>; google?: GoogleVerifier | null; storage?: Storage } = {},
 ) {
   const env = testEnv(opts.env);
   const outbox: Mail[] = [];
   const mailer: Mailer = { send: async (m) => void outbox.push(m) };
-  const storage = new MemoryStorage();
+  const storage = opts.storage ?? new MemoryStorage();
   const queue = new MemoryQueue();
   const app = createApp({
     env,
@@ -56,7 +56,15 @@ export function makeApp(
     const mail = [...outbox].reverse().find((m) => m.to === to);
     return /\b(\d{6})\b/.exec(mail?.text ?? '')?.[1] ?? null;
   };
-  return { app, req: supertest(app), outbox, lastCode, env, storage, queue };
+  return {
+    app,
+    req: supertest(app),
+    outbox,
+    lastCode,
+    env,
+    storage: storage as MemoryStorage,
+    queue,
+  };
 }
 
 export function refreshCookie(res: { headers: Record<string, unknown> }): string | null {
