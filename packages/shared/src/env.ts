@@ -62,9 +62,13 @@ export const ServerEnv = AiEnv.extend({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
-  EMAIL_TRANSPORT: z.enum(['smtp', 'ses', 'log']).default('smtp'),
+  /** smtp: Mailpit in dev, SES SMTP interface in prod. log: print OTPs to the console (dev only). */
+  EMAIL_TRANSPORT: z.enum(['smtp', 'log']).default('smtp'),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().int().default(1025),
+  SMTP_SECURE: bool,
+  SMTP_USER: optional,
+  SMTP_PASS: optional,
   SES_FROM: z.string().min(3),
   AWS_REGION: z.string().default('ap-south-1'),
   JWT_SECRET: z.string().min(32),
@@ -76,6 +80,12 @@ export const ServerEnv = AiEnv.extend({
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
   ADMIN_EMAIL: z.email().optional(),
+  /** TRD §10 rate limits (per IP for auth, per user for API). */
+  AUTH_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(5),
+  OTP_REQUESTS_PER_EMAIL_PER_HOUR: z.coerce.number().int().positive().default(5),
+  API_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(120),
+  /** Comma-separated origins allowed by CORS (the web app is same-origin via proxy). */
+  CORS_ORIGINS: z.string().default(''),
 });
 export type ServerEnv = z.infer<typeof ServerEnv>;
 
