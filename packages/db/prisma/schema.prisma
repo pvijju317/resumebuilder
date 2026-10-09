@@ -60,6 +60,8 @@ model User {
   applications  Application[]
   payments      Payment[]
   refreshTokens RefreshToken[]
+  files         UploadedFile[]
+  vaultImports  VaultImport[]
 }
 
 model OtpCode {
@@ -92,7 +94,64 @@ model RefreshToken {
   @@index([familyId])
 }
 
+// ---------- Files ----------
+
+/// A resume upload. The object lives in S3-compatible storage (R2) under `key`.
+model UploadedFile {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String   @unique
+  fileName  String
+  mime      String
+  size      Int
+  status    String // pending|uploaded|parsed|rejected
+  error     String?
+  createdAt DateTime @default(now())
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imports VaultImport[]
+
+  @@index([userId, createdAt])
+}
+
 // ---------- Career Vault ----------
+
+/// One run of `vault.parse`: extracted text in, reviewable draft out.
+model VaultImport {
+  id          String    @id @default(cuid())
+  userId      String
+  fileId      String?
+  source      String // file|text|anon
+  text        String // extracted resume text (PII; deleted with the user)
+  status      String // queued|parsing|ready|failed|confirmed
+  draft       Json? // VaultDraft (Zod), PII restored
+  error       String?
+  model       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  confirmedAt DateTime?
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file UploadedFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model VaultGapQuestion {
+  id            String   @id @default(cuid())
+  vaultId       String
+  achievementId String
+  question      String
+  expectedUnit  String?
+  status        String   @default("open") // open|answered|skipped
+  answer        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  vault Vault @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+
+  @@index([vaultId, status])
+}
 
 model Vault {
   id        String   @id @default(cuid())
@@ -102,12 +161,13 @@ model Vault {
   extras    Json? // VaultExtras (Zod): languages, awards, publications, volunteering
   updatedAt DateTime @updatedAt
 
-  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roles     VaultRole[]
-  projects  VaultProject[]
-  education VaultEducation[]
-  certs     VaultCertification[]
-  skills    VaultSkill[]
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles        VaultRole[]
+  projects     VaultProject[]
+  education    VaultEducation[]
+  certs        VaultCertification[]
+  skills       VaultSkill[]
+  gapQuestions VaultGapQuestion[]
 }
 
 model VaultRole {
@@ -132,7 +192,7 @@ model VaultRole {
 }
 
 model VaultProject {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   vaultId   String
   name      String
   role      String?
@@ -141,8 +201,8 @@ model VaultProject {
   endDate   String?
   summary   String?
   skills    String[] @default([])
-  hidden    Boolean @default(false)
-  confirmed Boolean @default(false)
+  hidden    Boolean  @default(false)
+  confirmed Boolean  @default(false)
   order     Int
 
   vault        Vault              @relation(fields: [vaultId], references: [id], onDelete: Cascade)
@@ -441,12 +501,12 @@ model AiCallLog {
 
 /// Per-model pricing for AiCallLog cost estimates (USD per 1M tokens). Admin-editable.
 model AiModelPrice {
-  id              String   @id @default(cuid())
-  provider        String
-  model           String
-  inputPerMUsd    Decimal  @db.Decimal(10, 4)
-  outputPerMUsd   Decimal  @db.Decimal(10, 4)
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  provider      String
+  model         String
+  inputPerMUsd  Decimal  @db.Decimal(10, 4)
+  outputPerMUsd Decimal  @db.Decimal(10, 4)
+  updatedAt     DateTime @updatedAt
 
   @@unique([provider, model])
 }
