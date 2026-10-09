@@ -5,13 +5,15 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./data/skill-aliases.json": "./data/skill-aliases.json"
+    "./data/skill-aliases.json": "./data/skill-aliases.json",
+    "./ats": "./src/ats/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@tailor/shared": "workspace:*"
+    "@tailor/shared": "workspace:*",
+    "wink-lemmatizer": "3.0.4"
   }
 }
