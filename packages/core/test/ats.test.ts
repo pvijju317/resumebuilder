@@ -7,6 +7,7 @@ import {
   isQuantified,
   keywordForms,
   lemma,
+  NO_SKILLS_NOTE,
   parseResumeText,
   phrase,
   type AtsResume,
@@ -113,7 +114,18 @@ describe('atsScore', () => {
     });
     expect(r.parts.placement).toBe(0);
     expect(r.notes).toContain('Show these in your experience, not only in skills: SQL, Python.');
-    expect(r.parts.niceToHave).toBe(ATS_WEIGHTS.niceToHave); // no nice-to-haves: nothing missing
+    // No nice-to-haves: that part follows the required skills instead of being free points.
+    expect(r.parts.niceToHave).toBe(ATS_WEIGHTS.niceToHave);
+  });
+
+  it('judges a job without nice-to-haves on its required skills alone', () => {
+    const r = atsScore(withText(resume({ skills: ['SQL'] })), {
+      title: 'Data Analyst',
+      mustHave: [{ name: 'SQL' }, { name: 'Kubernetes' }],
+      niceToHave: [],
+    });
+    expect(r.parts.mustHave).toBeCloseTo(0.5 * ATS_WEIGHTS.mustHave);
+    expect(r.parts.niceToHave).toBeCloseTo(0.5 * ATS_WEIGHTS.niceToHave);
   });
 
   it('scores title alignment and quantified bullets', () => {
@@ -152,8 +164,10 @@ describe('atsScore', () => {
     expect(r.parts.format).toBeCloseTo((2 / 5) * ATS_WEIGHTS.format);
     expect(r.parts.sections).toBeCloseTo((2 / 4) * ATS_WEIGHTS.sections);
     expect(r.parts.quantified).toBe(0);
-    expect(r.parts.mustHave).toBe(ATS_WEIGHTS.mustHave);
+    expect(r.parts.mustHave).toBe(0);
     expect(r.parts.placement).toBe(0);
+    expect(r.score).toBeNull();
+    expect(r.notes[0]).toBe(NO_SKILLS_NOTE);
     expect(r.notes).toEqual(
       expect.arrayContaining([
         'Two-column layouts can be read out of order by some ATS. A single column is safer.',
@@ -166,7 +180,7 @@ describe('atsScore', () => {
   });
 
   it('keeps scores within 0–100 and improves when the resume mirrors the job', () => {
-    const before = atsScore(withText(resume()), job).score;
+    const before = atsScore(withText(resume()), job).score!;
     const tailored = withText(
       resume({
         bullets: [
@@ -176,7 +190,7 @@ describe('atsScore', () => {
         ],
       }),
     );
-    const after = atsScore(tailored, job).score;
+    const after = atsScore(tailored, job).score!;
     expect(after).toBeGreaterThan(before);
     expect(after).toBeLessThanOrEqual(100);
   });

@@ -7,6 +7,7 @@ export function ScorePanel({ ats, before }: { ats: AtsScoreDto; before?: number 
   const must = ats.keywords.filter((k) => k.tier === 'must');
   const nice = ats.keywords.filter((k) => k.tier === 'nice');
   const matched = must.filter((k) => k.state === 'matched').length;
+  if (ats.score === null) return <NotScorable notes={ats.notes} />;
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
       <Card>
@@ -42,6 +43,32 @@ export function ScorePanel({ ats, before }: { ats: AtsScoreDto; before?: number 
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** No skills found in the job: say so plainly instead of showing a format-only number. */
+function NotScorable({ notes }: { notes: string[] }) {
+  const [reason, ...rest] = notes;
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-text">
+          <Info aria-hidden className="size-4 text-warning" strokeWidth={1.5} />
+          Not enough detail to score
+        </h3>
+        <p className="max-w-[65ch] text-sm text-muted">{reason}</p>
+        {rest.length ? (
+          <>
+            <p className="text-sm font-medium text-text">Meanwhile, from your resume</p>
+            <ul className="flex list-disc flex-col gap-2 pl-5 text-sm text-text marker:text-subtle">
+              {rest.map((n) => (
+                <li key={n}>{n}</li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

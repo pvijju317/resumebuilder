@@ -34,11 +34,15 @@ export interface KeywordResult {
 }
 
 export interface AtsScore {
-  score: number;
+  /** null when the job lists no skills to compare against: a number would be mostly format. */
+  score: number | null;
   parts: Record<keyof typeof ATS_WEIGHTS, number>;
   keywords: KeywordResult[];
   notes: string[];
 }
+
+export const NO_SKILLS_NOTE =
+  'This job post does not list skills or requirements to score against. Paste the full job description, including requirements.';
 
 const TITLE_STOP = new Set(['of', 'and', 'the', 'a', 'an', 'for', 'to', 'in', 'at', '&', 'with']);
 
@@ -82,7 +86,9 @@ export function atsScore(resume: AtsResume, job: AtsJob): AtsScore {
   }));
 
   const coverage = (ks: KeywordResult[]) =>
-    ks.length === 0 ? 1 : ks.reduce((a, k) => a + credit(k.state), 0) / ks.length;
+    ks.length === 0 ? 0 : ks.reduce((a, k) => a + credit(k.state), 0) / ks.length;
+  // A job without nice-to-haves is judged on its required skills alone (no free points).
+  const niceCoverage = nice.length ? coverage(nice) : coverage(must);
   const matchedMust = must.filter((k) => k.state === 'matched');
   const placement =
     matchedMust.length === 0
@@ -110,19 +116,20 @@ export function atsScore(resume: AtsResume, job: AtsJob): AtsScore {
 
   const parts = {
     mustHave: coverage(must) * W.mustHave,
-    niceToHave: coverage(nice) * W.niceToHave,
+    niceToHave: niceCoverage * W.niceToHave,
     placement: placement * W.placement,
     title: Math.min(1, title) * W.title,
     quantified: Math.min(1, quantRatio / QUANTIFIED_FULL) * W.quantified,
     format: (formatChecks.filter(Boolean).length / formatChecks.length) * W.format,
     sections: (sectionChecks.filter(Boolean).length / sectionChecks.length) * W.sections,
   };
-  const score = Math.max(
-    0,
-    Math.min(100, Math.round(Object.values(parts).reduce((a, b) => a + b, 0))),
-  );
+  const score =
+    must.length === 0
+      ? null
+      : Math.max(0, Math.min(100, Math.round(Object.values(parts).reduce((a, b) => a + b, 0))));
 
   const notes: string[] = [];
+  if (score === null) notes.push(NO_SKILLS_NOTE);
   const missingMust = must.filter((k) => k.state === 'missing').map((k) => k.name);
   if (missingMust.length) notes.push(`Missing required keywords: ${missingMust.join(', ')}.`);
   const onlyInSkills = matchedMust.filter((k) => !k.inBullets).map((k) => k.name);

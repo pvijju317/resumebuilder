@@ -27,7 +27,8 @@ export const JobDto = z.object({
 export type JobDto = z.infer<typeof JobDto>;
 
 export const AtsScoreDto = z.object({
-  score: z.number().int(),
+  /** null: the job lists no skills to compare against (see notes). */
+  score: z.number().int().nullable(),
   parts: z.record(z.string(), z.number()),
   keywords: z.array(
     z.object({

@@ -10,8 +10,13 @@ export function effectiveExtraction(extracted: unknown, overrides: unknown): Job
   return o.success ? { ...e.data, ...o.data } : e.data;
 }
 
+/**
+ * Informal posts (often LinkedIn) name skills without saying "required", so extraction files them
+ * under `keywords`. With no required list, those keywords are what the job asks for.
+ */
 export function toAtsJob(e: JobExtraction): AtsJob {
-  return { title: e.title, mustHave: e.mustHave, niceToHave: e.niceToHave };
+  const mustHave = e.mustHave.length ? e.mustHave : e.keywords;
+  return { title: e.title, mustHave, niceToHave: e.niceToHave };
 }
 
 /** The vault seen as a resume (all visible confirmed items), for the match score. */
