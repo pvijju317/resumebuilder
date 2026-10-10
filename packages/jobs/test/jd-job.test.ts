@@ -4,7 +4,7 @@ import { jdHash } from '@tailor/core/ats';
 import { createPrisma } from '@tailor/db';
 import { AppError } from '@tailor/shared';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { JD_FAILED_MESSAGE, runJdExtract } from '../src/jd.js';
+import { JD_FAILED_MESSAGE, JD_PROMPT_VERSION, runJdExtract } from '../src/jd.js';
 
 config({ path: resolve(import.meta.dirname, '../../../.env'), quiet: true });
 const prisma = createPrisma(process.env['DATABASE_URL_TEST']!);
@@ -60,7 +60,7 @@ describe('runJdExtract', () => {
     const run = vi.fn(async () => ({ output: OUT, model: 'm' }));
     const a = await pending();
     await prisma.jdCache.create({
-      data: { hash: jdHash(TEXT), raw: TEXT, extracted: OUT, model: 'm' },
+      data: { hash: jdHash(TEXT), raw: TEXT, extracted: OUT, model: 'm', promptVersion: JD_PROMPT_VERSION },
     });
     expect(await runJdExtract({ prisma, ai: { run } as never }, a.id, vi.fn(), false)).toEqual({
       status: 'ready',
@@ -76,6 +76,7 @@ describe('runJdExtract', () => {
         raw: 'x',
         extracted: OUT,
         model: 'm',
+        promptVersion: JD_PROMPT_VERSION,
       },
     });
     const b = await pending('https://jobs.example.com/2');
@@ -85,6 +86,45 @@ describe('runJdExtract', () => {
     expect(
       (await prisma.jdCache.findUniqueOrThrow({ where: { hash: jdHash(TEXT) } })).urlNorm,
     ).toBeNull();
+  });
+
+  it('re-extracts entries from an older prompt and refreshes them in place', async () => {
+    const stale = { ...OUT, mustHave: [] };
+    const old = await prisma.jdCache.create({
+      data: { hash: jdHash(TEXT), raw: TEXT, extracted: stale, model: 'old', promptVersion: 'v0' },
+    });
+    const job = await pending();
+    const run = vi.fn(async () => ({ output: OUT, model: 'new' }));
+    expect(await runJdExtract({ prisma, ai: { run } as never }, job.id, vi.fn(), false)).toEqual({
+      status: 'ready',
+      cached: false,
+    });
+    expect(run).toHaveBeenCalledOnce();
+    expect(await prisma.jdCache.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({
+      model: 'new',
+      promptVersion: JD_PROMPT_VERSION,
+      extracted: { mustHave: [{ name: 'SQL' }] },
+    });
+  });
+
+  it('moves a link from an older entry to the fresh one', async () => {
+    const old = await prisma.jdCache.create({
+      data: {
+        hash: 'old-text',
+        urlNorm: 'https://jobs.example.com/3',
+        raw: 'x',
+        extracted: OUT,
+        model: 'm',
+        promptVersion: 'v0',
+      },
+    });
+    const job = await pending('https://jobs.example.com/3');
+    const run = vi.fn(async () => ({ output: OUT, model: 'm' }));
+    await runJdExtract({ prisma, ai: { run } as never }, job.id, vi.fn(), false);
+    expect((await prisma.jdCache.findUniqueOrThrow({ where: { id: old.id } })).urlNorm).toBeNull();
+    expect(
+      (await prisma.jdCache.findUniqueOrThrow({ where: { hash: jdHash(TEXT) } })).urlNorm,
+    ).toBe('https://jobs.example.com/3');
   });
 
   it('requeues once on high demand, then fails with a friendly message', async () => {

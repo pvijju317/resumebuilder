@@ -1,5 +1,6 @@
 import { jdHash, normalizeJdText, normalizeJobUrl } from '@tailor/core/ats';
 import { loadVault, Prisma, type PrismaClient } from '@tailor/db';
+import { JD_PROMPT_VERSION } from '@tailor/jobs';
 import {
   AppError,
   type AtsScoreDto,
@@ -51,13 +52,15 @@ export function createJobsService(deps: JobsDeps) {
         urlNorm = normalizeJobUrl(body.url);
         if (!urlNorm) throw new AppError('VALIDATION', 'Enter a valid http(s) link.', 400);
         const byUrl = await prisma.jdCache.findUnique({ where: { urlNorm } });
-        if (byUrl) return this.attach(owner, { jdCacheId: byUrl.id, source, sourceUrl: urlNorm });
+        if (byUrl?.promptVersion === JD_PROMPT_VERSION)
+          return this.attach(owner, { jdCacheId: byUrl.id, source, sourceUrl: urlNorm });
         text = normalizeJdText(await deps.fetchJobText(urlNorm));
       } else {
         text = normalizeJdText(body.text);
       }
       const byHash = await prisma.jdCache.findUnique({ where: { hash: jdHash(text) } });
-      if (byHash) return this.attach(owner, { jdCacheId: byHash.id, source, sourceUrl: urlNorm });
+      if (byHash?.promptVersion === JD_PROMPT_VERSION)
+        return this.attach(owner, { jdCacheId: byHash.id, source, sourceUrl: urlNorm });
 
       const job = await prisma.job.create({
         data: {

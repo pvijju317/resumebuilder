@@ -1,8 +1,11 @@
 import { jdHash, normalizeJobUrl } from '@tailor/core/ats';
 import type { PrismaClient } from '@tailor/db';
 import { AppError } from '@tailor/shared';
-import type { AiClient } from '@tailor/ai';
+import { TASKS, type AiClient } from '@tailor/ai';
 import type { Requeue } from './vault.js';
+
+/** Cache entries from an older jd.extract prompt are re-extracted rather than reused. */
+export const JD_PROMPT_VERSION = TASKS['jd.extract'].promptVersion;
 
 export const JD_FAILED_MESSAGE =
   'We could not read that job description. Try pasting the full text.';
@@ -22,7 +25,7 @@ export async function runJdExtract(
 
   // Another user may have extracted the same JD meanwhile.
   const cached = await prisma.jdCache.findUnique({ where: { hash } });
-  if (cached) {
+  if (cached?.promptVersion === JD_PROMPT_VERSION) {
     await prisma.job.update({
       where: { id: jobId },
       data: { status: 'ready', jdCacheId: cached.id, rawText: null },
@@ -36,17 +39,18 @@ export async function runJdExtract(
       { text: job.rawText },
       { userId: job.userId ?? undefined, refId: jobId },
     );
+    const fresh = { extracted: r.output, model: r.model, promptVersion: JD_PROMPT_VERSION };
     const urlTaken = urlNorm ? await prisma.jdCache.findUnique({ where: { urlNorm } }) : null;
+    // A link last read with an older prompt now points at this fresh entry.
+    if (urlTaken && urlTaken.hash !== hash && urlTaken.promptVersion !== JD_PROMPT_VERSION) {
+      await prisma.jdCache.update({ where: { id: urlTaken.id }, data: { urlNorm: null } });
+    }
+    const keepUrl = !urlTaken || urlTaken.hash === hash || urlTaken.promptVersion !== JD_PROMPT_VERSION;
     const entry = await prisma.jdCache.upsert({
       where: { hash },
-      create: {
-        hash,
-        urlNorm: urlTaken ? null : urlNorm,
-        raw: job.rawText,
-        extracted: r.output,
-        model: r.model,
-      },
-      update: {},
+      create: { hash, urlNorm: keepUrl ? urlNorm : null, raw: job.rawText, ...fresh },
+      // Same text, older prompt: refresh in place so every job sharing it benefits.
+      update: cached ? fresh : {},
     });
     await prisma.job.update({
       where: { id: jobId },

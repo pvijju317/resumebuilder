@@ -306,13 +306,15 @@ model SkillAlias {
 // ---------- Jobs & optimizations ----------
 
 model JdCache {
-  id        String   @id @default(cuid())
-  urlNorm   String?  @unique
-  hash      String   @unique // sha256 of normalized JD text
-  raw       String
-  extracted Json // JobExtraction (Zod)
-  model     String
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  urlNorm       String?  @unique
+  hash          String   @unique // sha256 of normalized JD text
+  raw           String
+  extracted     Json // JobExtraction (Zod)
+  model         String
+  /// jd.extract prompt version that produced `extracted`; older entries are re-extracted.
+  promptVersion String   @default("v1")
+  createdAt     DateTime @default(now())
 
   jobs Job[]
 }
@@ -478,18 +480,18 @@ model Payment {
 // ---------- Anonymous flow ----------
 
 model AnonSession {
-  id             String   @id @default(cuid())
+  id              String   @id @default(cuid())
   /// sha256 of the random token held in the visitor's httpOnly cookie.
-  tokenHash      String   @unique
-  ipHash         String
-  fpHash         String?
-  resumeText     String
-  resumeLayout   Json? // {twoColumn}
-  jobId          String?
-  optimizationId String?
+  tokenHash       String   @unique
+  ipHash          String
+  fpHash          String?
+  resumeText      String
+  resumeLayout    Json? // {twoColumn}
+  jobId           String?
+  optimizationId  String?
   claimedByUserId String?
-  createdAt      DateTime @default(now())
-  expiresAt      DateTime
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime
 
   @@index([expiresAt])
   @@index([ipHash, createdAt])

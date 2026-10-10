@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { jdHash, normalizeJdText } from '@tailor/core/ats';
+import { JD_PROMPT_VERSION } from '@tailor/jobs';
 import type { AnonCheckDto, AtsScoreDto, JobDto, JobExtraction, VaultDraft } from '@tailor/shared';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db, makeApp, refreshCookie, resetDb, signIn } from './harness.js';
@@ -40,6 +41,7 @@ async function workerExtracts(jobId: string, extraction = EXTRACTION) {
       raw: job.rawText!,
       extracted: extraction,
       model: 'test',
+      promptVersion: JD_PROMPT_VERSION,
     },
   });
   await db().job.update({
@@ -85,6 +87,18 @@ describe('jobs', () => {
       .expect(201);
     expect(second.body).toMatchObject({ status: 'ready', extraction: { title: 'Data Analyst' } });
     expect(h.queue.jobs).toHaveLength(1);
+  });
+
+  it('does not reuse a cache entry from an older extraction prompt', async () => {
+    const h = makeApp();
+    const auth = await user(h);
+    const text = normalizeJdText(JD);
+    await db().jdCache.create({
+      data: { hash: jdHash(text), raw: text, extracted: EXTRACTION, model: 'old', promptVersion: 'v0' },
+    });
+    const job = await h.req.post('/api/v1/jobs').set(auth).send({ text: JD }).expect(202);
+    expect(job.body).toMatchObject({ status: 'pending', extraction: null });
+    expect(h.queue.jobs).toEqual([{ name: 'jd.extract', data: { jobId: job.body.id } }]);
   });
 
   it('fetches URLs through the safe fetcher and caches by normalized URL', async () => {

@@ -57,7 +57,7 @@ export const TASKS = {
   }),
   'jd.extract': def({
     name: 'jd.extract',
-    promptVersion: 'v1',
+    promptVersion: 'v2',
     modelClass: 'STANDARD',
     maxTokens: 1200,
     temperature: 0,
