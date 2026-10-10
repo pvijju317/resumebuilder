@@ -59,6 +59,13 @@ describe('normalization', () => {
       expect.arrayContaining(['javascript', 'js', 'ecmascript']),
     );
     expect(keywordForms('K8s')).toEqual(expect.arrayContaining(['kubernetes', 'k8s']));
+    // Filler a JD wraps around a skill is trimmed from the ends only.
+    expect(keywordForms('French language')).toContain('french');
+    expect(keywordForms('Strong SQL skills')).toContain('sql');
+    expect(keywordForms('Knowledge of RBI guidelines')).toContain('rbi guideline');
+    expect(keywordForms('Fintech experience')).toContain('fintech');
+    expect(keywordForms('Natural language processing')).not.toContain('natural processing');
+    expect(keywordForms('Experience')).toEqual(['experience']);
     expect(keywordForms('Experimentation', ['A/B testing'])).toEqual(
       expect.arrayContaining(['experimentation', 'a/b test']),
     );

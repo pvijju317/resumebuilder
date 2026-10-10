@@ -39,7 +39,7 @@ const def = <I extends z.ZodType, O extends z.ZodType>(t: TaskDef<I, O>) => t;
 export const TASKS = {
   'vault.parse': def({
     name: 'vault.parse',
-    promptVersion: 'v1',
+    promptVersion: 'v2',
     modelClass: 'PREMIUM',
     maxTokens: 6000,
     temperature: 0.1,
@@ -57,7 +57,7 @@ export const TASKS = {
   }),
   'jd.extract': def({
     name: 'jd.extract',
-    promptVersion: 'v2',
+    promptVersion: 'v3',
     modelClass: 'STANDARD',
     maxTokens: 1200,
     temperature: 0,
