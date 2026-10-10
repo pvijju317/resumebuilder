@@ -1,4 +1,4 @@
-import { formatVaultDate } from '@tailor/core';
+import { educationTitle, formatVaultDate, repeatsAchievement } from '@tailor/core';
 import type { AchievementDto, VaultDto } from '@tailor/shared';
 import {
   Button,
@@ -6,6 +6,7 @@ import {
   CardContent,
   Chip,
   cn,
+  DateField,
   EmptyState,
   Field,
   Input,
@@ -37,6 +38,8 @@ type FieldDef = {
   type?: 'text' | 'month' | 'textarea';
   required?: boolean;
   span?: boolean;
+  /** Month fields: a checkbox label meaning "empty = present". */
+  presentLabel?: string;
 };
 
 const FIELDS: Record<Kind, FieldDef[]> = {
@@ -46,7 +49,7 @@ const FIELDS: Record<Kind, FieldDef[]> = {
     { name: 'location', label: 'Location' },
     { name: 'type', label: 'Employment type' },
     { name: 'startDate', label: 'Start', type: 'month', required: true },
-    { name: 'endDate', label: 'End (leave empty if current)', type: 'month' },
+    { name: 'endDate', label: 'End', type: 'month', presentLabel: 'I work here now' },
     { name: 'scope', label: 'Scope', type: 'textarea', span: true },
   ],
   projects: [
@@ -83,7 +86,7 @@ const SINGULAR: Record<Kind, string> = {
 
 const errMsg = (e: unknown) =>
   e instanceof ApiError ? e.message : 'Could not save. Please try again.';
-/** "Feb 2023 to Present" (display only; stored as YYYY-MM). */
+/** "Feb 2023 to Present" (display only; stored as YYYY-MM, or YYYY when only the year is known). */
 const range = (s: string | null, e: string | null) =>
   s
     ? `${formatVaultDate(s, 'US')} to ${formatVaultDate(e, 'US')}`
@@ -145,23 +148,32 @@ function EntityModal({
           if (!missing) submit();
         }}
       >
-        {FIELDS[kind].map((f) => (
-          <Field key={f.name} label={f.label} className={cn(f.span && 'sm:col-span-2')}>
-            {f.type === 'textarea' ? (
-              <Textarea
-                value={values[f.name]}
-                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                rows={3}
-              />
-            ) : (
-              <Input
-                type={f.type === 'month' ? 'month' : 'text'}
-                value={values[f.name]}
-                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-              />
-            )}
-          </Field>
-        ))}
+        {FIELDS[kind].map((f) =>
+          f.type === 'month' ? (
+            <DateField
+              key={f.name}
+              label={f.label}
+              value={values[f.name] || null}
+              presentLabel={f.presentLabel}
+              onChange={(v) => setValues((s) => ({ ...s, [f.name]: v ?? '' }))}
+            />
+          ) : (
+            <Field key={f.name} label={f.label} className={cn(f.span && 'sm:col-span-2')}>
+              {f.type === 'textarea' ? (
+                <Textarea
+                  value={values[f.name]}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                  rows={3}
+                />
+              ) : (
+                <Input
+                  value={values[f.name]}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                />
+              )}
+            </Field>
+          ),
+        )}
         <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
       </form>
       {error ? (
@@ -221,11 +233,13 @@ function AchievementModal({
 }
 
 const PROFILE_FIELDS: {
-  name: 'name' | 'headline' | 'email' | 'phone' | 'location' | 'workAuth';
+  name: 'name' | 'headline' | 'summary' | 'email' | 'phone' | 'location' | 'workAuth';
   label: string;
+  textarea?: boolean;
 }[] = [
   { name: 'name', label: 'Full name' },
   { name: 'headline', label: 'Headline' },
+  { name: 'summary', label: 'Summary', textarea: true },
   { name: 'email', label: 'Email' },
   { name: 'phone', label: 'Phone' },
   { name: 'location', label: 'Location' },
@@ -279,11 +293,19 @@ function ProfileModal({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         {PROFILE_FIELDS.map((f) => (
-          <Field key={f.name} label={f.label}>
-            <Input
-              value={values[f.name]}
-              onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-            />
+          <Field key={f.name} label={f.label} className={cn(f.textarea && 'sm:col-span-2')}>
+            {f.textarea ? (
+              <Textarea
+                value={values[f.name]}
+                rows={4}
+                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+              />
+            ) : (
+              <Input
+                value={values[f.name]}
+                onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+              />
+            )}
           </Field>
         ))}
       </div>
@@ -582,6 +604,9 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
             <p className="text-sm text-muted">
               {vault.profile.headline || 'Add a headline in your profile.'}
             </p>
+            {vault.profile.summary ? (
+              <p className="mt-2 max-w-[65ch] text-sm text-text">{vault.profile.summary}</p>
+            ) : null}
             <p className="text-sm text-subtle">
               {[vault.profile.email, vault.profile.phone, vault.profile.location]
                 .filter(Boolean)
@@ -606,11 +631,9 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
                   <Sparkles /> Strengthen your vault ({vault.openGapQuestions})
                 </Link>
               </Button>
-            ) : (
-              <p className="text-sm text-muted">
-                Add numbers to achievements to raise your strength.
-              </p>
-            )}
+            ) : vault.strengthTip ? (
+              <p className="text-sm text-muted">{vault.strengthTip}</p>
+            ) : null}
           </CardContent>
         </Card>
       </div>
@@ -686,7 +709,9 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-base font-semibold text-text">{p.name}</p>
-                  {p.summary ? <p className="text-sm text-muted">{p.summary}</p> : null}
+                  {p.summary && !repeatsAchievement(p.summary, p.achievements) ? (
+                    <p className="text-sm text-muted">{p.summary}</p>
+                  ) : null}
                 </div>
                 <RowActions
                   label="project"
@@ -731,9 +756,20 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
         {entityList('education', vault.education, (e) => (
           <>
             <p className="text-sm font-medium text-text">
-              {[e.degree, e.field].filter(Boolean).join(', ') || e.institution}
+              {educationTitle(e.degree, e.field) || e.institution}
             </p>
-            <p className="text-sm text-muted">{e.institution}</p>
+            <p className="text-sm text-muted">
+              {[
+                e.institution,
+                // No end date on education means unknown, not "Present".
+                [e.startDate, e.endDate]
+                  .filter((d): d is string => !!d)
+                  .map((d) => formatVaultDate(d, 'US'))
+                  .join(' to '),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
           </>
         ))}
       </Section>
@@ -747,7 +783,11 @@ export function VaultEditor({ vault, onImport }: { vault: VaultDto; onImport: ()
         {entityList('certs', vault.certs, (c) => (
           <>
             <p className="text-sm font-medium text-text">{c.name}</p>
-            <p className="text-sm text-muted">{[c.issuer, c.date].filter(Boolean).join(' · ')}</p>
+            <p className="text-sm text-muted">
+              {[c.issuer, c.date ? formatVaultDate(c.date, 'US') : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
           </>
         ))}
       </Section>

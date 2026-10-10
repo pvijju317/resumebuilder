@@ -31,7 +31,7 @@ export function ConsentCard() {
             removed first.
           </li>
           <li>Your data is used only to build and tailor your resumes.</li>
-          <li>You can export or delete everything at any time from Settings.</li>
+          <li>Export and deletion of your data are coming to Settings before launch.</li>
         </ul>
         <label htmlFor={agreeId} className="flex items-start gap-3 text-sm text-text">
           <input

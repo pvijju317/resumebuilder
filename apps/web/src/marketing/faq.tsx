@@ -12,7 +12,7 @@ const FAQ: [string, string][] = [
   ],
   [
     'Is my data used to train AI models?',
-    'Not unless you opt in, and the option is off by default. Contact details are removed before any AI step. You can export or delete everything from Settings.',
+    'Not unless you opt in, and the option is off by default. Contact details are removed before any AI step. Export and deletion of your data are coming to Settings before launch.',
   ],
   [
     'I am a fresher. Will this work for me?',

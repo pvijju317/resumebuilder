@@ -116,7 +116,7 @@ The product must look premium, calm, and trustworthy — like Linear, Stripe Das
 
 - Zod schemas in `packages/shared` are the contract between web, api, worker, and extension. Never duplicate types.
 - API handlers thin; logic in services; DB access only via Prisma in services.
-- All money in integer paise; all dates UTC ISO; vault dates `YYYY-MM`.
+- All money in integer paise; all dates UTC ISO; vault dates `YYYY-MM`, or `YYYY` when the source gives only a year (never invent a month).
 - Feature flags/env for anything provider-specific.
 - Errors: typed `AppError(code, message, httpStatus)`; user-facing messages friendly, logs detailed.
 - No PII in logs. No prompt/response bodies logged in production.

@@ -13,13 +13,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileUp, RotateCcw } from 'lucide-react';
 import { useRef, useState, type DragEvent } from 'react';
 import { api, ApiError } from '../lib/api.js';
+import { useUploadLimit } from '../check/turnstile.js';
 import { uploadResume, vaultKeys } from './hooks.js';
 
-const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT =
   '.pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain';
 
 export function BuildPanel({ title = 'Build your Career Vault' }: { title?: string }) {
+  const limit = useUploadLimit();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [mode, setMode] = useState<'file' | 'paste'>('file');
@@ -48,7 +49,8 @@ export function BuildPanel({ title = 'Build your Career Vault' }: { title?: stri
     setError(null);
     if (!file) return;
     if (!/\.(pdf|docx|txt)$/i.test(file.name)) return setError('Upload a PDF, DOCX or TXT file.');
-    if (file.size > MAX_BYTES) return setError('Files must be 5 MB or smaller.');
+    if (limit && file.size > limit.bytes)
+      return setError(`Files must be ${limit.label} or smaller.`);
     build.mutate({ file });
   };
   const onDrop = (e: DragEvent) => {
@@ -109,7 +111,9 @@ export function BuildPanel({ title = 'Build your Career Vault' }: { title?: stri
             <FileUp aria-hidden className="size-6 text-muted" strokeWidth={1.5} />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium text-text">Drop your resume here</p>
-              <p className="text-xs text-subtle">PDF, DOCX or TXT, up to 5 MB</p>
+              <p className="text-xs text-subtle">
+                PDF, DOCX or TXT{limit ? `, up to ${limit.label}` : ''}
+              </p>
             </div>
             <input
               ref={input}

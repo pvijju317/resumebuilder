@@ -94,7 +94,13 @@ describe('jobs', () => {
     const auth = await user(h);
     const text = normalizeJdText(JD);
     await db().jdCache.create({
-      data: { hash: jdHash(text), raw: text, extracted: EXTRACTION, model: 'old', promptVersion: 'v0' },
+      data: {
+        hash: jdHash(text),
+        raw: text,
+        extracted: EXTRACTION,
+        model: 'old',
+        promptVersion: 'v0',
+      },
     });
     const job = await h.req.post('/api/v1/jobs').set(auth).send({ text: JD }).expect(202);
     expect(job.body).toMatchObject({ status: 'pending', extraction: null });
@@ -309,10 +315,13 @@ describe('anonymous score check (PRD F1)', () => {
     expect(await db().job.count()).toBe(0);
   });
 
-  it('exposes the public Turnstile site key', async () => {
-    const h = makeApp({ env: { TURNSTILE_SITE_KEY: '1x00000000000000000000AA' } });
+  it('exposes the public Turnstile site key and the upload limit', async () => {
+    const h = makeApp({
+      env: { TURNSTILE_SITE_KEY: '1x00000000000000000000AA', FILE_MAX_BYTES: '4194304' },
+    });
     expect((await h.req.get('/api/v1/config').expect(200)).body).toEqual({
       turnstileSiteKey: '1x00000000000000000000AA',
+      maxUploadBytes: 4 * 1024 * 1024,
     });
   });
 });

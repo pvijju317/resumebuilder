@@ -260,6 +260,10 @@ export function createVaultService(deps: { prisma: PrismaClient; queue: JobQueue
 
     async refreshGapQuestions(userId: string) {
       const vaultId = await vaultIdOf(userId);
+      await prisma.vault.update({
+        where: { id: vaultId },
+        data: { gapQuestionsRequestedAt: new Date() },
+      });
       await queue.enqueue({ name: 'vault.gapQuestions', data: { vaultId, userId } });
     },
 

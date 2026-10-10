@@ -44,6 +44,14 @@ export function usePublicConfig() {
   });
 }
 
+/** The server's upload limit, e.g. "4 MB" (null until the config has loaded). */
+export function useUploadLimit(): { bytes: number; label: string } | null {
+  const bytes = usePublicConfig().data?.maxUploadBytes;
+  if (!bytes) return null;
+  const mb = bytes / (1024 * 1024);
+  return { bytes, label: `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB` };
+}
+
 /**
  * Cloudflare Turnstile widget. Calls onToken with a single-use token; `resetKey` changes force a
  * fresh token after each submit. Without a site key (local dev) it issues a placeholder token.

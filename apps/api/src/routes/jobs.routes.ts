@@ -122,7 +122,10 @@ export function anonRoutes(deps: {
 export function configRoute(env: ServerEnv) {
   const r = Router();
   r.get('/', (_req, res) => {
-    const body: PublicConfig = { turnstileSiteKey: env.TURNSTILE_SITE_KEY ?? null };
+    const body: PublicConfig = {
+      turnstileSiteKey: env.TURNSTILE_SITE_KEY ?? null,
+      maxUploadBytes: env.FILE_MAX_BYTES,
+    };
     res.set('Cache-Control', 'public, max-age=300').json(body);
   });
   return r;

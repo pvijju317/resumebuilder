@@ -139,6 +139,8 @@ export const VaultDto = z.object({
   id: z.string(),
   profile: VaultProfile,
   strength: z.number().int(),
+  /** The most useful next step to raise strength (null when there is nothing left). */
+  strengthTip: z.string().nullable(),
   extras: VaultExtras,
   roles: z.array(RoleDto),
   projects: z.array(ProjectDto),
@@ -146,6 +148,8 @@ export const VaultDto = z.object({
   certs: z.array(CertDto),
   skills: z.array(SkillDto),
   openGapQuestions: z.number().int(),
+  /** Gap questions are being generated; poll until false. */
+  gapQuestionsPending: z.boolean(),
   updatedAt: z.string(),
 });
 export type VaultDto = z.infer<typeof VaultDto>;
@@ -234,6 +238,7 @@ export const ProfilePatch = z.object({
   location: z.string().trim().max(120).nullable().optional(),
   address: z.string().trim().max(300).nullable().optional(),
   headline: z.string().trim().max(200).nullable().optional(),
+  summary: z.string().trim().max(1500).nullable().optional(),
   links: z.array(Link).max(6).optional(),
   workAuth: z.string().trim().max(200).nullable().optional(),
 });

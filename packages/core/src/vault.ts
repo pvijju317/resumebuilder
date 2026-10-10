@@ -105,6 +105,77 @@ export function vaultStrength(v: StrengthInput): StrengthBreakdown {
 }
 
 /**
+ * The one most useful next step for vault strength: the part with the most points still missing,
+ * so the hint never asks for something that can no longer raise the score.
+ */
+export function strengthTip(v: StrengthInput): string | null {
+  const { score, parts } = vaultStrength(v);
+  if (score >= 100) return null;
+  const W = STRENGTH_WEIGHTS;
+  const gaps = (Object.keys(W) as (keyof typeof W)[])
+    // Skill tags come from parsing; there is nothing for the user to do there directly.
+    .filter((k) => k !== 'skillTagged')
+    .map((k) => ({ k, gap: W[k] - parts[k] }))
+    .filter((g) => g.gap >= 0.5)
+    .sort((a, b) => b.gap - a.gap);
+  const top = gaps[0]?.k;
+  if (!top) return null;
+  const p = v.profile;
+  switch (top) {
+    case 'quantified':
+      return 'Add numbers to achievements to raise your strength.';
+    case 'skills':
+      return 'Add more of your skills (aim for 10).';
+    case 'education':
+      return 'Add your education.';
+    case 'experience':
+      return 'Add start dates, and about three achievements for each role.';
+    case 'profile': {
+      if (!(p.links?.length ?? 0)) return 'Add a LinkedIn or portfolio link to your profile.';
+      const missing = (['headline', 'phone', 'location', 'email'] as const).find(
+        (f) => !filled(p[f]),
+      );
+      return missing
+        ? `Add your ${missing} to your profile.`
+        : 'Complete your profile to raise your strength.';
+    }
+    default:
+      return null;
+  }
+}
+
+const squash = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/** Share of a summary's words that must appear in one achievement for it to count as a copy. */
+const REPEAT_OVERLAP = 0.8;
+
+/**
+ * Parsers sometimes copy (or lightly reword) a project's bullet into its summary: true when the
+ * summary is essentially one of the achievements.
+ */
+export function repeatsAchievement(summary: string, achievements: { text: string }[]): boolean {
+  const words = squash(summary).split(' ').filter(Boolean);
+  if (!words.length) return false;
+  return achievements.some((a) => {
+    const have = new Set(squash(a.text).split(' '));
+    return words.filter((w) => have.has(w)).length / words.length >= REPEAT_OVERLAP;
+  });
+}
+
+/** "B.Tech, Computer Science", without repeating a field the degree already names. */
+export function educationTitle(degree?: string | null, field?: string | null): string {
+  const d = degree?.trim() ?? '';
+  const f = field?.trim() ?? '';
+  if (!d) return f;
+  if (!f || d.toLowerCase().includes(f.toLowerCase())) return d;
+  return `${d}, ${f}`;
+}
+
+/**
  * Which achievements get gap questions: visible, unquantified, most recent role first, then
  * projects; capped at `max` (PRD: up to 8).
  */

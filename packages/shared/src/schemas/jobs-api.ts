@@ -65,5 +65,9 @@ export const AnonCheckDto = z.object({
 });
 export type AnonCheckDto = z.infer<typeof AnonCheckDto>;
 
-export const PublicConfig = z.object({ turnstileSiteKey: z.string().nullable() });
+export const PublicConfig = z.object({
+  turnstileSiteKey: z.string().nullable(),
+  /** Largest resume upload this deployment accepts (FILE_MAX_BYTES). */
+  maxUploadBytes: z.number().int().positive(),
+});
 export type PublicConfig = z.infer<typeof PublicConfig>;

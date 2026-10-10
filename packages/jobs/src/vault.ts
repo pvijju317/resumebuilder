@@ -79,6 +79,17 @@ export async function runGapQuestions(
   deps: VaultJobDeps,
   data: { vaultId: string; userId: string },
 ) {
+  try {
+    return await generateGapQuestions(deps, data);
+  } finally {
+    // Done either way: clients stop waiting (a failure just means no new questions).
+    await deps.prisma.vault
+      .updateMany({ where: { id: data.vaultId }, data: { gapQuestionsRequestedAt: null } })
+      .catch(() => undefined);
+  }
+}
+
+async function generateGapQuestions(deps: VaultJobDeps, data: { vaultId: string; userId: string }) {
   const { prisma, ai } = deps;
   const v = await loadVault(prisma, { id: data.vaultId });
   if (!v) return { created: 0 };

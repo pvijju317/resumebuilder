@@ -14,17 +14,26 @@ export const vaultKeys = {
   gaps: ['vault', 'gaps'] as const,
 };
 
+/** Polls while gap questions are being generated, so they appear without a reload. */
 export function useVault() {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: vaultKeys.vault,
     queryFn: async () => {
       try {
-        return await api<VaultDto>('/vault');
+        const v = await api<VaultDto>('/vault');
+        const prev = qc.getQueryData<VaultDto | null>(vaultKeys.vault);
+        if (prev?.gapQuestionsPending && !v.gapQuestionsPending)
+          void qc.invalidateQueries({ queryKey: vaultKeys.gaps });
+        return v;
       } catch (e) {
         if (e instanceof ApiError && e.status === 404) return null;
         throw e;
       }
     },
+    refetchInterval: (q) => (q.state.data?.gapQuestionsPending ? 3000 : false),
+    // Keep going in a background tab, so the result is there when the user comes back.
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -35,6 +44,7 @@ export function useLatestImport() {
     queryFn: () => api<VaultImportDto | null>('/vault/imports/latest'),
     refetchInterval: (q) =>
       q.state.data && ['queued', 'parsing'].includes(q.state.data.status) ? 2000 : false,
+    refetchIntervalInBackground: true,
   });
 }
 

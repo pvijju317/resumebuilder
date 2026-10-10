@@ -3,6 +3,7 @@ export { applyTheme, readTheme, type ThemePref } from './lib/theme.js';
 export { Button, buttonVariants, type ButtonProps } from './components/button.js';
 export { Spinner } from './components/spinner.js';
 export { Field, Input, Label, Textarea } from './components/field.js';
+export { DateField } from './components/date-field.js';
 export {
   Card,
   CardContent,

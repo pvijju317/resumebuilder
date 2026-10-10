@@ -147,8 +147,11 @@ test('career vault: onboarding, consent, build, review, confirm, edit, strengthe
   await page.getByRole('button', { name: 'Add certification' }).click();
   await page.getByLabel('Certification', { exact: true }).fill('CFA Level 1');
   await page.getByLabel('Issuer', { exact: true }).fill('CFA Institute');
+  // Year only: the month stays empty rather than being invented.
+  await page.getByLabel('Date year').fill('2022');
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('CFA Level 1')).toBeVisible();
+  await expect(page.getByText('CFA Institute · 2022')).toBeVisible();
 
   await page.getByRole('button', { name: 'Edit certification' }).click();
   await page.getByLabel('Certification', { exact: true }).fill('CFA Level 2');

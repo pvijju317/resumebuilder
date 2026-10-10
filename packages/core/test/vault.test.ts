@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   answerToMetrics,
+  educationTitle,
+  repeatsAchievement,
   selectGapCandidates,
+  strengthTip,
   vaultStrength,
   type StrengthInput,
 } from '../src/vault.js';
@@ -149,5 +152,68 @@ describe('answerToMetrics', () => {
     );
     expect(answerToMetrics('7', { ...ctx, expectedUnit: 'reports' })[0]?.unit).toBe('reports');
     expect(answerToMetrics('a lot, honestly', ctx)).toEqual([]);
+  });
+});
+
+describe('strengthTip', () => {
+  it('asks for numbers while that is the biggest gap', () => {
+    expect(strengthTip(base())).toBe('Add numbers to achievements to raise your strength.');
+  });
+
+  it('never asks for numbers once they no longer raise the score', () => {
+    const v = base();
+    v.roles.forEach((r) =>
+      r.achievements.forEach((a) => a.metrics.push({ value: 1, unit: 'x', context: '' })),
+    );
+    v.profile.links = [];
+    expect(vaultStrength(v).parts.quantified).toBe(40);
+    expect(strengthTip(v)).toBe('Add a LinkedIn or portfolio link to your profile.');
+    v.profile.links = [{}];
+    expect(strengthTip(v)).toBeNull();
+  });
+
+  it('names the missing profile field or section', () => {
+    const v = base();
+    v.roles.forEach((r) =>
+      r.achievements.forEach((a) => a.metrics.push({ value: 1, unit: 'x', context: '' })),
+    );
+    v.skillsCount = 2;
+    expect(strengthTip(v)).toBe('Add more of your skills (aim for 10).');
+    v.skillsCount = 10;
+    v.educationCount = 0;
+    expect(strengthTip(v)).toBe('Add your education.');
+    v.educationCount = 1;
+    v.profile.phone = null;
+    expect(strengthTip(v)).toBe('Add your phone to your profile.');
+  });
+});
+
+describe('educationTitle', () => {
+  it('does not repeat a field the degree already names', () => {
+    expect(educationTitle('B.Tech Computer Science', 'Computer Science')).toBe(
+      'B.Tech Computer Science',
+    );
+    expect(educationTitle('B.Tech', 'Computer Science')).toBe('B.Tech, Computer Science');
+    expect(educationTitle(null, 'Statistics')).toBe('Statistics');
+    expect(educationTitle('MBA', null)).toBe('MBA');
+  });
+});
+
+describe('repeatsAchievement', () => {
+  it('spots a summary copied from a bullet, ignoring case and punctuation', () => {
+    const a = [{ text: 'Built a prototype; 300 beta users.' }];
+    expect(repeatsAchievement('built a prototype 300 beta users', a)).toBe(true);
+    // Lightly reworded by the parser (seen live with the real model).
+    expect(
+      repeatsAchievement(
+        'Side project: Built a no-code prototype that explained credit scores to first-time borrowers.',
+        [
+          {
+            text: 'Built a no-code prototype that explained credit scores to first-time borrowers; 300 beta users.',
+          },
+        ],
+      ),
+    ).toBe(true);
+    expect(repeatsAchievement('A credit score explainer for first-time borrowers', a)).toBe(false);
   });
 });

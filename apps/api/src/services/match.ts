@@ -23,6 +23,7 @@ export function toAtsJob(e: JobExtraction): AtsJob {
 export function vaultToAtsResume(v: VaultFull): AtsResume {
   const profile = (v.profile ?? {}) as {
     headline?: string | null;
+    summary?: string | null;
     email?: string | null;
     phone?: string | null;
   };
@@ -42,6 +43,7 @@ export function vaultToAtsResume(v: VaultFull): AtsResume {
   const education = v.education.filter((e) => !e.hidden);
   const fullText = [
     profile.headline,
+    profile.summary,
     ...roles.map((r) => `${r.title} ${r.company} ${r.scope ?? ''}`),
     ...bullets,
     ...education.map((e) => [e.degree, e.field, e.institution].filter(Boolean).join(' ')),
@@ -53,13 +55,13 @@ export function vaultToAtsResume(v: VaultFull): AtsResume {
   return {
     headline: profile.headline ?? null,
     recentTitle: recent?.title ?? null,
-    summary: profile.headline ?? null,
+    summary: profile.summary ?? profile.headline ?? null,
     bullets,
     skills,
     fullText,
     // Tailor's templates always produce these sections in an ATS-safe, single-column layout.
     sections: {
-      summary: !!profile.headline,
+      summary: !!(profile.summary || profile.headline),
       experience: roles.length > 0,
       education: education.length > 0,
       skills: skills.length > 0,

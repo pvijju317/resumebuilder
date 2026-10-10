@@ -21,6 +21,8 @@ export const VaultProfile = z.object({
   location: z.string().max(120).nullish(),
   address: z.string().max(300).nullish(),
   headline: z.string().max(200).nullish(),
+  /** The resume's own summary/profile paragraph, kept verbatim. */
+  summary: z.string().max(1500).nullish(),
   links: z.array(Link).default([]),
   workAuth: z.string().max(200).nullish(),
 });

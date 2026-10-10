@@ -176,6 +176,8 @@ describe('vault build → review → confirm', () => {
       name: 'vault.gapQuestions',
       data: { vaultId: v.id, userId: expect.any(String) },
     });
+    // The app polls until the worker has written the questions.
+    expect(v.gapQuestionsPending).toBe(true);
   });
 
   it('flags duplicate roles on a second import and honours skips; never overwrites confirmed profile fields', async () => {

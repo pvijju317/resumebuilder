@@ -19,6 +19,8 @@ export function CheckResultPage() {
     queryKey: ['anon-check', id],
     queryFn: () => api<AnonCheckDto>(`/anon/check/${id}`),
     refetchInterval: (s) => (s.state.data?.status === 'pending' ? 2000 : false),
+    // Keep going in a background tab, so the result is there when the user comes back.
+    refetchIntervalInBackground: true,
     retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 2,
   });
 

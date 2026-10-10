@@ -227,12 +227,19 @@ describe('runGapQuestions', () => {
       },
       model: 'm',
     }));
+    await prisma.vault.update({
+      where: { id: vault.id },
+      data: { gapQuestionsRequestedAt: new Date() },
+    });
     expect(
       await runGapQuestions(
         { prisma, ai: { run } as never },
         { vaultId: vault.id, userId: user.id },
       ),
     ).toEqual({ created: 2 });
+    expect(
+      (await prisma.vault.findUniqueOrThrow({ where: { id: vault.id } })).gapQuestionsRequestedAt,
+    ).toBeNull();
 
     const sent = (
       run.mock.calls[0] as unknown as [string, { achievements: { id: string; text: string }[] }]
@@ -249,6 +256,21 @@ describe('runGapQuestions', () => {
       ['open', 'How many managers used them?'],
       ['open', 'How many people attended?'],
     ]);
+  });
+
+  it('stops the pending flag even when the AI call fails', async () => {
+    const { user, vault } = await vaultWith();
+    await prisma.vault.update({
+      where: { id: vault.id },
+      data: { gapQuestionsRequestedAt: new Date() },
+    });
+    const run = vi.fn(async () => Promise.reject(new Error('down')));
+    await expect(
+      runGapQuestions({ prisma, ai: { run } as never }, { vaultId: vault.id, userId: user.id }),
+    ).rejects.toThrow('down');
+    expect(
+      (await prisma.vault.findUniqueOrThrow({ where: { id: vault.id } })).gapQuestionsRequestedAt,
+    ).toBeNull();
   });
 
   it('clears open questions when nothing is left to quantify', async () => {

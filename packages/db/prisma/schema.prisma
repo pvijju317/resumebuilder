@@ -165,12 +165,14 @@ model VaultGapQuestion {
 }
 
 model Vault {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  profile   Json // VaultProfile (Zod)
-  strength  Int      @default(0) // 0-100
-  extras    Json? // VaultExtras (Zod): languages, awards, publications, volunteering
-  updatedAt DateTime @updatedAt
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  profile                 Json // VaultProfile (Zod)
+  strength                Int       @default(0) // 0-100
+  extras                  Json? // VaultExtras (Zod): languages, awards, publications, volunteering
+  /// Set while vault.gapQuestions runs, so the app can show questions as soon as they exist.
+  gapQuestionsRequestedAt DateTime?
+  updatedAt               DateTime  @updatedAt
 
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   roles        VaultRole[]

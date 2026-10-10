@@ -1,4 +1,4 @@
-import { vaultStrength, type StrengthInput } from '@tailor/core';
+import { strengthTip, vaultStrength, type StrengthInput } from '@tailor/core';
 import { Metric, VaultExtras, VaultProfile, type VaultDto } from '@tailor/shared';
 import { z } from 'zod';
 import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
@@ -36,11 +36,15 @@ function achievementDto(a: VaultFull['roles'][number]['achievements'][number]) {
   };
 }
 
-export function toVaultDto(v: VaultFull, openGapQuestions: number): VaultDto {
+/** A request older than this is treated as finished (e.g. the worker died), so clients stop polling. */
+export const GAP_QUESTIONS_PENDING_MS = 5 * 60_000;
+
+export function toVaultDto(v: VaultFull, openGapQuestions: number, now = Date.now()): VaultDto {
   return {
     id: v.id,
     profile: VaultProfile.catch({ name: '', links: [] }).parse(v.profile),
     strength: v.strength,
+    strengthTip: strengthTip(toStrengthInput(v)),
     extras: VaultExtras.catch({
       languages: [],
       awards: [],
@@ -104,6 +108,9 @@ export function toVaultDto(v: VaultFull, openGapQuestions: number): VaultDto {
       order: s.order,
     })),
     openGapQuestions,
+    gapQuestionsPending:
+      !!v.gapQuestionsRequestedAt &&
+      now - v.gapQuestionsRequestedAt.getTime() < GAP_QUESTIONS_PENDING_MS,
     updatedAt: v.updatedAt.toISOString(),
   };
 }

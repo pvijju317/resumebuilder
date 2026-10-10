@@ -1,4 +1,4 @@
-import { skillKey } from '@tailor/core';
+import { repeatsAchievement, skillKey } from '@tailor/core';
 import { recomputeStrength, type Prisma, type PrismaClient } from '@tailor/db';
 import {
   AppError,
@@ -227,7 +227,8 @@ export function createImportsService(deps: {
               url: p.url ?? null,
               startDate: p.startDate ?? null,
               endDate: p.endDate ?? null,
-              summary: p.summary ?? null,
+              summary:
+                p.summary && !repeatsAchievement(p.summary, p.achievements) ? p.summary : null,
               confirmed: true,
               order: order++,
               achievements: {
@@ -299,6 +300,10 @@ export function createImportsService(deps: {
         return vaultId;
       });
 
+      await prisma.vault.update({
+        where: { id: vaultId },
+        data: { gapQuestionsRequestedAt: new Date() },
+      });
       await queue.enqueue({ name: 'vault.gapQuestions', data: { vaultId, userId } });
       return { vaultId };
     },

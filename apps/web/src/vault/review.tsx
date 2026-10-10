@@ -1,5 +1,16 @@
 import type { VaultDraft, VaultImportDto } from '@tailor/shared';
-import { Button, Card, CardContent, Chip, cn, Field, Input, Textarea, useToast } from '@tailor/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  cn,
+  DateField,
+  Field,
+  Input,
+  Textarea,
+  useToast,
+} from '@tailor/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -14,43 +25,6 @@ function Flag({ show }: { show: boolean }) {
     <span className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning">
       <AlertTriangle aria-hidden className="size-3.5" strokeWidth={1.75} /> Please check
     </span>
-  );
-}
-
-function MonthInput({
-  label,
-  value,
-  onChange,
-  allowPresent,
-}: {
-  label: string;
-  value: string | null | undefined;
-  onChange: (v: string | null) => void;
-  allowPresent?: boolean;
-}) {
-  const present = allowPresent && !value;
-  return (
-    <div className="flex flex-col gap-2">
-      <Field label={label}>
-        <Input
-          type="month"
-          value={value ?? ''}
-          disabled={present}
-          onChange={(e) => onChange(e.target.value || null)}
-        />
-      </Field>
-      {allowPresent ? (
-        <label className="flex items-center gap-2 text-xs text-muted">
-          <input
-            type="checkbox"
-            checked={!!present}
-            onChange={(e) => onChange(e.target.checked ? null : '')}
-            className="size-3.5 accent-[var(--accent)]"
-          />
-          I work here now
-        </label>
-      ) : null}
-    </div>
   );
 }
 
@@ -136,6 +110,15 @@ export function ReviewImport({ imp }: { imp: VaultImportDto & { draft: VaultDraf
               onChange={(e) => set((d) => void (d.profile.location = e.target.value))}
             />
           </Field>
+          {draft.profile.summary != null ? (
+            <Field label="Summary" className="sm:col-span-2">
+              <Textarea
+                rows={4}
+                value={draft.profile.summary}
+                onChange={(e) => set((d) => void (d.profile.summary = e.target.value))}
+              />
+            </Field>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -192,20 +175,20 @@ export function ReviewImport({ imp }: { imp: VaultImportDto & { draft: VaultDraf
                           onChange={(e) => set((d) => void (d.roles[i]!.company = e.target.value))}
                         />
                       </Field>
-                      <MonthInput
+                      <DateField
                         label="Start"
                         value={r.startDate}
                         onChange={(v) => set((d) => void (d.roles[i]!.startDate = v))}
                       />
-                      <MonthInput
+                      <DateField
                         label="End"
                         value={r.endDate}
-                        allowPresent
-                        onChange={(v) => set((d) => void (d.roles[i]!.endDate = v || null))}
+                        presentLabel="I work here now"
+                        onChange={(v) => set((d) => void (d.roles[i]!.endDate = v))}
                       />
                     </div>
                     {!r.startDate ? (
-                      <p className="text-xs text-danger">Add a start month to save this role.</p>
+                      <p className="text-xs text-danger">Add a start year to save this role.</p>
                     ) : null}
                     <div className="flex flex-col gap-3">
                       <p className="text-sm font-medium text-text">Achievements</p>

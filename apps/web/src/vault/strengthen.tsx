@@ -7,6 +7,7 @@ import {
   Field,
   Input,
   Skeleton,
+  Spinner,
   StrengthMeter,
   useToast,
 } from '@tailor/ui';
@@ -81,7 +82,13 @@ export function StrengthenPage() {
         </CardContent>
       </Card>
 
-      {!q ? (
+      {!q && !questions.length && vault.data?.gapQuestionsPending ? (
+        <Card>
+          <CardContent className="flex items-center gap-3 text-sm text-muted" aria-live="polite">
+            <Spinner /> Preparing questions about your achievements…
+          </CardContent>
+        </Card>
+      ) : !q ? (
         <EmptyState
           icon={<Sparkles />}
           title={questions.length ? 'All done for now' : 'No questions right now'}

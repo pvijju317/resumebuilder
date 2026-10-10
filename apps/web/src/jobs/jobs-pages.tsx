@@ -254,6 +254,8 @@ export function JobPage() {
     queryKey: ['job', id],
     queryFn: () => api<JobDto>(`/jobs/${id}`),
     refetchInterval: (q) => (q.state.data?.status === 'pending' ? 2000 : false),
+    // Keep going in a background tab, so the result is there when the user comes back.
+    refetchIntervalInBackground: true,
   });
   const ready = job.data?.status === 'ready';
   const match = useQuery({

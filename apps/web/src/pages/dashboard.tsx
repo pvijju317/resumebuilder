@@ -10,7 +10,10 @@ import {
   StrengthMeter,
 } from '@tailor/ui';
 import { ArrowRight, Briefcase, Check, FileCheck2, KanbanSquare, Upload } from 'lucide-react';
+import type { JobDto } from '@tailor/shared';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { api } from '../lib/api.js';
 import { useMe } from '../lib/auth.js';
 import { useVault } from '../vault/hooks.js';
 
@@ -40,8 +43,19 @@ const STEPS = [
 export function DashboardPage() {
   const me = useMe();
   const vault = useVault();
-  const hasVault = !!vault.data;
+  const jobs = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => api<{ items: JobDto[]; nextCursor: string | null }>('/jobs'),
+  });
   const firstName = me.data?.name?.split(' ')[0];
+  // Steps 3 and 4 open in later releases; only the first two can be done today.
+  const done = [!!vault.data, (jobs.data?.items.length ?? 0) > 0, false, false];
+  const available = [true, true, false, false];
+  const next = done.findIndex((d, i) => !d && available[i]);
+  const links = [
+    { to: '/app/vault', label: done[0] ? 'Open vault' : 'Start' },
+    { to: '/app/jobs', label: done[1] ? 'View jobs' : 'Add job' },
+  ];
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
@@ -66,63 +80,56 @@ export function DashboardPage() {
             Get set up
           </h3>
           <ol className="mt-4 flex flex-col gap-2">
-            {STEPS.map((s, i) => (
-              <li
-                key={s.title}
-                className={cn(
-                  'flex items-start gap-4 rounded-[var(--radius-control)] p-4',
-                  i === 0 || (hasVault && i === 1) ? 'bg-surface shadow-card' : '',
-                )}
-              >
-                <span
+            {STEPS.map((s, i) => {
+              const link = links[i];
+              return (
+                <li
+                  key={s.title}
                   className={cn(
-                    'flex size-9 shrink-0 items-center justify-center rounded-full [&_svg]:size-4 [&_svg]:stroke-[1.5]',
-                    i === 0 && hasVault
-                      ? 'bg-success-soft text-success'
-                      : i === 0
-                        ? 'bg-accent text-accent-fg'
-                        : 'bg-surface text-muted',
+                    'flex items-start gap-4 rounded-[var(--radius-control)] p-4',
+                    i === next && 'bg-surface shadow-card',
                   )}
-                  aria-hidden
                 >
-                  {i === 0 && hasVault ? <Check /> : <s.icon />}
-                </span>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="text-sm font-medium text-text">
-                    {s.title}
-                    {i === 0 ? <span className="sr-only"> (next step)</span> : null}
-                  </p>
-                  <p className="text-sm text-muted">{s.body}</p>
-                </div>
-                {i === 0 ? (
-                  <Button
-                    asChild
-                    size="sm"
-                    variant={hasVault ? 'secondary' : 'primary'}
-                    className="ml-auto shrink-0 self-center"
+                  <span
+                    className={cn(
+                      'flex size-9 shrink-0 items-center justify-center rounded-full [&_svg]:size-4 [&_svg]:stroke-[1.5]',
+                      done[i]
+                        ? 'bg-success-soft text-success'
+                        : i === next
+                          ? 'bg-accent text-accent-fg'
+                          : 'bg-surface text-muted',
+                    )}
+                    aria-hidden
                   >
-                    <Link to="/app/vault">
-                      {hasVault ? 'Open vault' : 'Start'} <ArrowRight />
-                    </Link>
-                  </Button>
-                ) : i === 1 ? (
-                  <Button
-                    asChild
-                    size="sm"
-                    variant={hasVault ? 'primary' : 'secondary'}
-                    className="ml-auto shrink-0 self-center"
-                  >
-                    <Link to="/app/jobs">
-                      Add job <ArrowRight />
-                    </Link>
-                  </Button>
-                ) : (
-                  <span className="ml-auto shrink-0 self-center rounded-full border border-border px-2.5 py-1 text-xs text-muted">
-                    Opens next release
+                    {done[i] ? <Check /> : <s.icon />}
                   </span>
-                )}
-              </li>
-            ))}
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <p className="text-sm font-medium text-text">
+                      {s.title}
+                      {done[i] ? <span className="sr-only"> (done)</span> : null}
+                      {i === next ? <span className="sr-only"> (next step)</span> : null}
+                    </p>
+                    <p className="text-sm text-muted">{s.body}</p>
+                  </div>
+                  {link ? (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant={i === next ? 'primary' : 'secondary'}
+                      className="ml-auto shrink-0 self-center"
+                    >
+                      <Link to={link.to}>
+                        {link.label} <ArrowRight />
+                      </Link>
+                    </Button>
+                  ) : (
+                    <span className="ml-auto shrink-0 self-center rounded-full border border-border px-2.5 py-1 text-xs text-muted">
+                      Opens next release
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </section>
 

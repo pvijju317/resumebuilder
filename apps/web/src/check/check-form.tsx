@@ -5,9 +5,8 @@ import { ArrowRight, FileUp, ShieldCheck } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../lib/api.js';
-import { Turnstile } from './turnstile.js';
+import { Turnstile, useUploadLimit } from './turnstile.js';
 
-const MAX_BYTES = 5 * 1024 * 1024;
 const MIME: Record<string, string> = {
   pdf: 'application/pdf',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -54,6 +53,7 @@ function Segmented<T extends string>({
 
 /** PRD F1: resume + job in, ATS score out, no account. */
 export function CheckForm() {
+  const limit = useUploadLimit();
   const navigate = useNavigate();
   const [resumeMode, setResumeMode] = useState<'file' | 'paste'>('file');
   const [jobMode, setJobMode] = useState<'paste' | 'url'>('paste');
@@ -128,7 +128,9 @@ export function CheckForm() {
         {resumeMode === 'file' ? (
           <div className="flex min-h-[184px] flex-col items-center justify-center gap-3 rounded-[var(--radius-control)] border border-dashed border-border-strong p-6 text-center">
             <FileUp aria-hidden className="size-5 text-muted" strokeWidth={1.5} />
-            <p className="text-sm text-text">{file ? file.name : 'PDF, DOCX or TXT, up to 5 MB'}</p>
+            <p className="text-sm text-text">
+              {file ? file.name : `PDF, DOCX or TXT${limit ? `, up to ${limit.label}` : ''}`}
+            </p>
             <input
               ref={input}
               type="file"
@@ -138,8 +140,10 @@ export function CheckForm() {
               onChange={(e) => {
                 const f = e.target.files?.[0] ?? null;
                 setError(null);
-                if (f && (!/\.(pdf|docx|txt)$/i.test(f.name) || f.size > MAX_BYTES))
-                  return setError('Upload a PDF, DOCX or TXT file up to 5 MB.');
+                if (f && (!/\.(pdf|docx|txt)$/i.test(f.name) || (limit && f.size > limit.bytes)))
+                  return setError(
+                    `Upload a PDF, DOCX or TXT file${limit ? ` up to ${limit.label}` : ''}.`,
+                  );
                 setFile(f);
               }}
             />
