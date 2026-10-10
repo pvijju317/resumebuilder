@@ -68,7 +68,7 @@ describe('readableText', () => {
       <h2>Requirements</h2><ul><li>3+ years of SQL and Python</li><li>Tableau dashboards for senior stakeholders</li><li>Experience running A/B tests</li></ul>
       <p>You will partner with category managers and translate questions into analysis plans with clear recommendations.</p></article>
       <footer>© Fabrikam</footer></body></html>`;
-    const text = readableText(html, 'https://jobs.example.com/1');
+    const text = readableText(html);
     expect(text).toContain('3+ years of SQL and Python');
     expect(text).toContain('Data Analyst');
     expect(text).not.toContain('window.evil');

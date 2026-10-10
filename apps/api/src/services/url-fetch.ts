@@ -1,7 +1,7 @@
 import { lookup } from 'node:dns/promises';
 import { Readability } from '@mozilla/readability';
 import ipaddr from 'ipaddr.js';
-import { JSDOM, VirtualConsole } from 'jsdom';
+import { parseHTML } from 'linkedom';
 import { Agent, request } from 'undici';
 import { AppError } from '@tailor/shared';
 
@@ -96,24 +96,23 @@ export async function fetchHtml(rawUrl: string): Promise<{ url: string; html: st
   throw new AppError('VALIDATION', UNREADABLE, 400);
 }
 
-/** Readable main text from HTML. Scripts never run (JSDOM default), console output is dropped. */
-export function readableText(html: string, url: string): string {
-  const dom = new JSDOM(html, { url, virtualConsole: new VirtualConsole() });
-  try {
-    const article = new Readability(dom.window.document).parse();
-    const text = (article?.textContent ?? dom.window.document.body?.textContent ?? '')
-      .replace(/\s+\n/g, '\n')
-      .trim();
-    const title = article?.title ? `${article.title}\n\n` : '';
-    return `${title}${text}`;
-  } finally {
-    dom.window.close();
-  }
+/**
+ * Readable main text from HTML. linkedom only parses: scripts never run and nothing is loaded.
+ * (Not jsdom: its dependencies need require() of ES modules, which the Vercel runtime refuses.)
+ */
+export function readableText(html: string): string {
+  const { document } = parseHTML(html);
+  const article = new Readability(document as unknown as ConstructorParameters<typeof Readability>[0]).parse();
+  const text = (article?.textContent ?? document.body?.textContent ?? '')
+    .replace(/\s+\n/g, '\n')
+    .trim();
+  const title = article?.title ? `${article.title}\n\n` : '';
+  return `${title}${text}`;
 }
 
 export async function fetchJobText(url: string): Promise<string> {
-  const { url: finalUrl, html } = await fetchHtml(url);
-  const text = readableText(html, finalUrl);
+  const { html } = await fetchHtml(url);
+  const text = readableText(html);
   if (text.length < FETCH_LIMITS.minChars) throw new AppError('VALIDATION', UNREADABLE, 400);
   return text;
 }
